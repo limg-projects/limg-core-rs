@@ -2,10 +2,12 @@
 
 mod common;
 mod encode;
+mod decode;
 mod error;
 
 pub use common::*;
 pub use encode::*;
+pub use decode::*;
 pub use error::*;
 
 pub fn add(left: u64, right: u64) -> u64 {

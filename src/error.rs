@@ -5,4 +5,5 @@ pub enum Error {
     ZeroImageDimensions,
     InputBufferTooSmall,
     OutputBufferTooSmall,
+    UnsupportFormat,
 }
