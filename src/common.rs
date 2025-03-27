@@ -6,8 +6,8 @@ pub const PIXEL_R_MASK: u16 = 0xF800;
 pub const PIXEL_G_MASK: u16 = 0x07E0;
 pub const PIXEL_B_MASK: u16 = 0x001F;
 
-pub const FILE_SIGNATURE: [u8; 4] = *b"LIMG";
-pub(crate) const FILE_SIGNATURE_U32: u32 = u32::from_be_bytes(FILE_SIGNATURE);
+pub const IMAGE_SIGNATURE: [u8; 4] = *b"LIMG";
+pub(crate) const IMAGE_SIGNATURE_U32_NE: u32 = u32::from_ne_bytes(IMAGE_SIGNATURE);
 
 pub const IMAGE_HEADER_SIZE: usize = size_of::<ImageHeader>();
 

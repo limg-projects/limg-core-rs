@@ -1,4 +1,4 @@
-use crate::{rgb_to_pixel, Error, ImageHeaderInternal, ImageSpec, Result, FILE_SIGNATURE_U32, IMAGE_HEADER_SIZE, PIXEL_SIZE, RGB_CHANNELS};
+use crate::{rgb_to_pixel, Error, ImageHeaderInternal, ImageSpec, Result, IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, PIXEL_SIZE, RGB_CHANNELS};
 
 #[inline(always)]
 pub const fn encode_bounds(spec: &ImageSpec) -> usize {
@@ -53,7 +53,7 @@ pub fn encode_header(dest: &mut [u8], spec: &ImageSpec) -> Result<usize> {
 
 pub unsafe fn encode_header_unchecked(dest: &mut [u8], spec: &ImageSpec) -> usize {
     let header = ImageHeaderInternal {
-        signature: FILE_SIGNATURE_U32.to_be(),
+        signature: IMAGE_SIGNATURE_U32_NE,
         width: spec.width.to_le(),
         height: spec.height.to_le(),
         transparent_color: spec.transparent_color.to_le(),
