@@ -1,5 +1,5 @@
-
-use crate::{Error, ImageHeaderInternal, ImageSpec, Result, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::{Error, ImageSpec, Result};
+use crate::header::{IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, ImageHeaderInternal};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, pixel_to_rgb};
 use ::core::slice::from_raw_parts;
 
