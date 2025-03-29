@@ -1,10 +1,8 @@
 use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
-use crate::spec::ImageSpec;
+use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
 use crate::error::{Error, Result};
-use crate::DataEndian;
 use ::core::slice::from_raw_parts_mut;
-use ::core::ptr::copy_nonoverlapping;
 
 #[inline(always)]
 pub const fn encode_bounds(spec: &ImageSpec) -> usize {
@@ -67,7 +65,7 @@ pub unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize
     let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();
 
     unsafe {
-        copy_nonoverlapping(header_ptr, buf.as_mut_ptr(), IMAGE_HEADER_SIZE);
+        ::core::ptr::copy_nonoverlapping(header_ptr, buf.as_mut_ptr(), IMAGE_HEADER_SIZE);
     }
 
     IMAGE_HEADER_SIZE
@@ -78,18 +76,18 @@ macro_rules! encode_data_endian {
     ($data: ident, $data_unchecked: ident, $data_raw: ident, $data_raw_unchecked: ident, $to_byte_fn: ident) => {
         #[inline]
         pub fn $data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
-            let pixel_raw_buf = unsafe {
+            let pixel_buf = unsafe {
                 from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
             };
-            $data_raw(rgb_data, pixel_raw_buf, num_pixels, consumed_bytes)
+            $data_raw(rgb_data, pixel_buf, num_pixels, consumed_bytes)
         }
         
         #[inline]
         pub unsafe fn $data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
-            unsafe {
-                let pixel_buf = from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES);
-                $data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes)
-            }
+            let pixel_buf = unsafe {
+                from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
+            };
+            unsafe { $data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) }
         }
 
         #[inline]
@@ -137,11 +135,9 @@ pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, da
 
 #[inline]
 pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
-    unsafe {
-        match data_endian {
-            DataEndian::Big => encode_data_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
-            DataEndian::Little => encode_data_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
-        }
+    match data_endian {
+        DataEndian::Big => unsafe { encode_data_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) },
+        DataEndian::Little => unsafe { encode_data_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) },
     }
 }
 
@@ -161,11 +157,9 @@ pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize,
 
 #[inline]
 pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
-    unsafe {
-        match data_endian {
-            DataEndian::Big => encode_data_raw_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
-            DataEndian::Little => encode_data_raw_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
-        }
+    match data_endian {
+        DataEndian::Big => unsafe { encode_data_raw_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) },
+        DataEndian::Little => unsafe { encode_data_raw_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) },
     }
 }
 
