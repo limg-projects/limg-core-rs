@@ -9,9 +9,10 @@ mod error;
 
 pub use crate::header::{IMAGE_SIGNATURE, IMAGE_HEADER_SIZE, ImageHeader};
 pub use crate::spec::ImageSpec;
+pub use crate::pixel::*;
 pub use encode::*;
 pub use decode::*;
-pub use error::*;
+pub use error::{Result, Error};
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

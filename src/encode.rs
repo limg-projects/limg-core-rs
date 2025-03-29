@@ -1,7 +1,7 @@
-use crate::{Error, Result};
 use crate::header::{IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, ImageHeaderInternal};
 use crate::spec::ImageSpec;
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
+use crate::error::{Error, Result};
 use ::core::slice::from_raw_parts_mut;
 use ::core::ptr::copy_nonoverlapping;
 

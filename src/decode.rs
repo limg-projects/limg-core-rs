@@ -1,7 +1,7 @@
-use crate::{Error, Result};
 use crate::header::{IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, ImageHeaderInternal};
 use crate::spec::ImageSpec;
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, pixel_to_rgb};
+use crate::{Error, Result};
 use ::core::slice::from_raw_parts;
 
 pub fn decode(image_data: &[u8], rgb_buf: &mut [u8], consumed_bytes: Option<&mut usize>) -> Result<(ImageSpec, usize)> {
