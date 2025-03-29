@@ -1,5 +1,5 @@
-use crate::header::{IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, ImageHeaderInternal};
-use crate::spec::ImageSpec;
+use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, pixel_to_rgb};
 use crate::{Error, Result};
 use ::core::slice::from_raw_parts;
@@ -63,7 +63,8 @@ pub fn decode_header(data: &[u8], consumed_bytes: Option<&mut usize>) -> Result<
     Ok(ImageSpec {
         width: header.width.to_le(),
         height: header.height.to_le(),
-        transparent_color: header.transparent_color.to_le()
+        transparent_color: header.transparent_color.to_le(),
+        data_endian: unsafe { ::core::mem::transmute(header.flag & IMAGE_FLAG_ENDIAN_BIT) },
     })
 }
 
@@ -77,7 +78,8 @@ pub unsafe fn decode_header_unchecked(data: &[u8], consumed_bytes: Option<&mut u
     ImageSpec {
         width: header.width.to_le(),
         height: header.height.to_le(),
-        transparent_color: header.transparent_color.to_le()
+        transparent_color: header.transparent_color.to_le(),
+        data_endian: unsafe { ::core::mem::transmute(header.flag & IMAGE_FLAG_ENDIAN_BIT) },
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::header::{IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, ImageHeaderInternal};
+use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::ImageSpec;
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
 use crate::error::{Error, Result};
@@ -56,10 +56,11 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
 pub unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     let header = ImageHeaderInternal {
         signature: IMAGE_SIGNATURE_U32_NE,
+        version: IMAGE_CURRENT_VARSION,
+        flag: spec.flag(),
         width: spec.width.to_le(),
         height: spec.height.to_le(),
         transparent_color: spec.transparent_color.to_le(),
-        reserve: 0
     };
 
     let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();
