@@ -1,6 +1,7 @@
 #![no_std]
 
 mod common;
+mod pixel;
 mod encode;
 mod decode;
 mod error;
