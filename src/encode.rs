@@ -1,10 +1,10 @@
-use crate::{rgb_to_pixel, Error, ImageHeaderInternal, ImageSpec, Result, IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, PIXEL_SIZE, RGB_CHANNELS};
+use crate::{rgb_to_pixel, Error, ImageHeaderInternal, ImageSpec, Result, IMAGE_SIGNATURE_U32_NE, IMAGE_HEADER_SIZE, PIXEL_BYTES, RGB_CHANNELS};
 use ::core::slice::from_raw_parts_mut;
 use ::core::ptr::copy_nonoverlapping;
 
 #[inline(always)]
 pub const fn encode_bounds(spec: &ImageSpec) -> usize {
-    IMAGE_HEADER_SIZE + spec.num_pixels() * PIXEL_SIZE
+    IMAGE_HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
 #[inline]
@@ -85,7 +85,7 @@ pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, co
 #[inline]
 pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
     unsafe {
-        let pixel_buf = from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_SIZE);
+        let pixel_buf = from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES);
         encode_data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes)
     }
 }
@@ -95,7 +95,7 @@ pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize,
     if rgb_data.len() < num_pixels * RGB_CHANNELS {
         return Err(Error::InputBufferTooSmall);
     }
-    if pixel_buf.len() < num_pixels * PIXEL_SIZE {
+    if pixel_buf.len() < num_pixels * PIXEL_BYTES {
         return Err(Error::OutputBufferTooSmall);
     }
 
@@ -106,7 +106,7 @@ pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize,
 
 pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
     let mut rgb_ptr = rgb_data.as_ptr().cast::<[u8; RGB_CHANNELS]>();
-    let mut pixel_ptr = pixel_buf.as_mut_ptr().cast::<[u8; PIXEL_SIZE]>();
+    let mut pixel_ptr = pixel_buf.as_mut_ptr().cast::<[u8; PIXEL_BYTES]>();
 
     for _ in 0..num_pixels {
         unsafe {
@@ -120,5 +120,5 @@ pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], n
         *consumed_bytes = num_pixels * RGB_CHANNELS;
     }
 
-    num_pixels * PIXEL_SIZE
+    num_pixels * PIXEL_BYTES
 }

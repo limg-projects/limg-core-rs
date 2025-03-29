@@ -1,7 +1,7 @@
 
 pub const RGB_CHANNELS: usize = 3;
 
-pub const PIXEL_SIZE: usize = size_of::<u16>();
+pub const PIXEL_BYTES: usize = size_of::<u16>();
 pub const PIXEL_R_MASK: u16 = 0xF800;
 pub const PIXEL_G_MASK: u16 = 0x07E0;
 pub const PIXEL_B_MASK: u16 = 0x001F;
@@ -10,8 +10,6 @@ pub const IMAGE_SIGNATURE: [u8; 4] = *b"LIMG";
 pub(crate) const IMAGE_SIGNATURE_U32_NE: u32 = u32::from_ne_bytes(IMAGE_SIGNATURE);
 
 pub const IMAGE_HEADER_SIZE: usize = size_of::<ImageHeader>();
-
-pub const MAX_ENCODE_BOUNDS: usize = IMAGE_HEADER_SIZE + u16::MAX as usize * u16::MAX as usize * PIXEL_SIZE;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -79,15 +77,18 @@ pub const fn pixel_to_rgb(pixel: u16) -> [u8; RGB_CHANNELS] {
 
 #[inline(always)]
 pub const fn pixel_to_red(pixel: u16) -> u8 {
-    ((pixel & PIXEL_R_MASK) >> 11) as u8
+    let r = ((pixel & PIXEL_R_MASK) >> 11) as u8;
+    (r << 3) | (r >> 2)
 }
 
 #[inline(always)]
 pub const fn pixel_to_green(pixel: u16) -> u8 {
-    ((pixel & PIXEL_G_MASK) >>  5) as u8
+    let g = ((pixel & PIXEL_G_MASK) >>  5) as u8;
+    (g << 2) | (g >> 4)
 }
 
 #[inline(always)]
 pub const fn pixel_to_blue(pixel: u16) -> u8 {
-    (pixel & PIXEL_B_MASK) as u8
+    let b = (pixel & PIXEL_B_MASK) as u8;
+    (b << 3) | (b >> 2)
 }
