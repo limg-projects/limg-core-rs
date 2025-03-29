@@ -7,11 +7,11 @@ pub struct ImageSpec {
 }
 
 impl ImageSpec {
-    pub(crate) const fn num_pixels(&self) -> usize {
+    pub const fn num_pixels(&self) -> usize {
         self.width as usize * self.height as usize
     }
 
-    pub(crate) const fn is_zero_dimensions(&self) -> bool {
+    pub const fn is_zero_dimensions(&self) -> bool {
         self.width == 0 || self.height == 0
     }
 }

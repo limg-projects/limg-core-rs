@@ -1,14 +1,14 @@
 #![no_std]
 
-mod common;
 mod header;
+mod spec;
 mod pixel;
 mod encode;
 mod decode;
 mod error;
 
-pub use common::*;
 pub use crate::header::{IMAGE_SIGNATURE, IMAGE_HEADER_SIZE, ImageHeader};
+pub use crate::spec::ImageSpec;
 pub use encode::*;
 pub use decode::*;
 pub use error::*;
