@@ -129,10 +129,10 @@ macro_rules! encode_data_endian {
 
 #[inline]
 pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> Result<usize> {
-    match data_endian {
-        DataEndian::Big => encode_data_be(rgb_data, pixel_buf, num_pixels, consumed_bytes),
-        DataEndian::Little => encode_data_le(rgb_data, pixel_buf, num_pixels, consumed_bytes),
-    }
+    let pixel_raw_buf = unsafe {
+        from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
+    };
+    encode_data_raw(rgb_data, pixel_raw_buf, num_pixels, data_endian, consumed_bytes)
 }
 
 #[inline]
@@ -159,7 +159,7 @@ pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize,
     }
 }
 
-#[inline(always)]
+#[inline]
 pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
     unsafe {
         match data_endian {
