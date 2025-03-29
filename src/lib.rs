@@ -8,7 +8,7 @@ mod decode;
 mod error;
 
 pub use crate::header::{IMAGE_SIGNATURE, IMAGE_HEADER_SIZE, ImageHeader};
-pub use crate::spec::ImageSpec;
+pub use crate::spec::{DataEndian, ImageSpec};
 pub use crate::pixel::*;
 pub use encode::*;
 pub use decode::*;
