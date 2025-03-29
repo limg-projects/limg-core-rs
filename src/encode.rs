@@ -2,6 +2,7 @@ use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZ
 use crate::spec::ImageSpec;
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
 use crate::error::{Error, Result};
+use crate::DataEndian;
 use ::core::slice::from_raw_parts_mut;
 use ::core::ptr::copy_nonoverlapping;
 
@@ -34,7 +35,7 @@ pub unsafe fn encode_unchecked(rgb_data: &[u8], image_buf: &mut [u8], spec: &Ima
         written_bytes += encode_header_unchecked(image_buf, spec);
 
         let data_slice = image_buf.get_unchecked_mut(IMAGE_HEADER_SIZE..);
-        written_bytes += encode_data_raw_unchecked(rgb_data, data_slice, spec.num_pixels(), consumed_bytes);
+        written_bytes += encode_data_raw_unchecked(rgb_data, data_slice, spec.num_pixels(), spec.data_endian, consumed_bytes);
     }
     written_bytes
 }
@@ -72,24 +73,80 @@ pub unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize
     IMAGE_HEADER_SIZE
 }
 
-#[inline]
-pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
-    let pixel_raw_buf = unsafe {
-        from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
+
+macro_rules! encode_data_endian {
+    ($data: ident, $data_unchecked: ident, $data_raw: ident, $data_raw_unchecked: ident, $to_byte_fn: ident) => {
+        #[inline]
+        pub fn $data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
+            let pixel_raw_buf = unsafe {
+                from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
+            };
+            $data_raw(rgb_data, pixel_raw_buf, num_pixels, consumed_bytes)
+        }
+        
+        #[inline]
+        pub unsafe fn $data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
+            unsafe {
+                let pixel_buf = from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES);
+                $data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes)
+            }
+        }
+
+        #[inline]
+        pub fn $data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
+            if rgb_data.len() < num_pixels * RGB_CHANNELS {
+                return Err(Error::InputBufferTooSmall);
+            }
+            if pixel_buf.len() < num_pixels * PIXEL_BYTES {
+                return Err(Error::OutputBufferTooSmall);
+            }
+        
+            unsafe {
+                Ok($data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes))
+            }
+        }
+
+        pub unsafe fn $data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
+            let mut rgb_ptr = rgb_data.as_ptr().cast::<[u8; RGB_CHANNELS]>();
+            let mut pixel_ptr = pixel_buf.as_mut_ptr().cast::<[u8; PIXEL_BYTES]>();
+        
+            for _ in 0..num_pixels {
+                unsafe {
+                    *pixel_ptr = rgb_to_pixel(*rgb_ptr).$to_byte_fn();
+                    rgb_ptr = rgb_ptr.add(1);
+                    pixel_ptr = pixel_ptr.add(1);
+                }
+            }
+        
+            if let Some(consumed_bytes) = consumed_bytes {
+                *consumed_bytes = num_pixels * RGB_CHANNELS;
+            }
+        
+            num_pixels * PIXEL_BYTES
+        }
     };
-    encode_data_raw(rgb_data, pixel_raw_buf, num_pixels, consumed_bytes)
 }
 
 #[inline]
-pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
-    unsafe {
-        let pixel_buf = from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES);
-        encode_data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes)
+pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> Result<usize> {
+    match data_endian {
+        DataEndian::Big => encode_data_be(rgb_data, pixel_buf, num_pixels, consumed_bytes),
+        DataEndian::Little => encode_data_le(rgb_data, pixel_buf, num_pixels, consumed_bytes),
     }
 }
 
 #[inline]
-pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
+pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
+    unsafe {
+        match data_endian {
+            DataEndian::Big => encode_data_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
+            DataEndian::Little => encode_data_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
+        }
+    }
+}
+
+#[inline]
+pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> Result<usize> {
     if rgb_data.len() < num_pixels * RGB_CHANNELS {
         return Err(Error::InputBufferTooSmall);
     }
@@ -98,25 +155,32 @@ pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize,
     }
 
     unsafe {
-        Ok(encode_data_raw_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes))
+        Ok(encode_data_raw_unchecked(rgb_data, pixel_buf, num_pixels, data_endian, consumed_bytes))
     }
 }
 
-pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> usize {
-    let mut rgb_ptr = rgb_data.as_ptr().cast::<[u8; RGB_CHANNELS]>();
-    let mut pixel_ptr = pixel_buf.as_mut_ptr().cast::<[u8; PIXEL_BYTES]>();
-
-    for _ in 0..num_pixels {
-        unsafe {
-            *pixel_ptr = rgb_to_pixel(*rgb_ptr).to_le_bytes();
-            rgb_ptr = rgb_ptr.add(1);
-            pixel_ptr = pixel_ptr.add(1);
+#[inline(always)]
+pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
+    unsafe {
+        match data_endian {
+            DataEndian::Big => encode_data_raw_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
+            DataEndian::Little => encode_data_raw_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes),
         }
     }
+}
 
-    if let Some(consumed_bytes) = consumed_bytes {
-        *consumed_bytes = num_pixels * RGB_CHANNELS;
-    }
+encode_data_endian! {
+    encode_data_be,
+    encode_data_be_unchecked,
+    encode_data_raw_be,
+    encode_data_raw_be_unchecked,
+    to_be_bytes
+}
 
-    num_pixels * PIXEL_BYTES
+encode_data_endian! {
+    encode_data_le,
+    encode_data_le_unchecked,
+    encode_data_raw_le,
+    encode_data_raw_le_unchecked,
+    to_le_bytes
 }
