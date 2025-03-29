@@ -34,7 +34,7 @@ pub struct ImageHeader {
     pub width: u16,
     /// Image height in pixels.
     pub height: u16,
-    /// The transparent color encoded as a 16-bit pixel.
+    /// Transparent pixel color in 16-bit RGB565 format.
     pub transparent_color: u16,
 }
 
