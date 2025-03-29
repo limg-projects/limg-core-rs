@@ -2,11 +2,19 @@ use ::core::fmt;
 
 pub type Result<T> = ::core::result::Result<T, Error>;
 
+/// Errors that can occur during encoding or decoding.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
+    /// The image has a width or height of zero.
     ZeroImageDimensions,
+
+    /// The input buffer does not contain enough data.
     InputBufferTooSmall,
+
+    /// The output buffer is too small to hold the result.
     OutputBufferTooSmall,
+
+    /// The image format or header is not supported or invalid.
     UnsupportedFormat,
 }
 
