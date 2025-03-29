@@ -127,18 +127,18 @@ macro_rules! encode_data_endian {
 
 #[inline]
 pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> Result<usize> {
-    let pixel_raw_buf = unsafe {
+    let pixel_buf = unsafe {
         from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
     };
-    encode_data_raw(rgb_data, pixel_raw_buf, num_pixels, data_endian, consumed_bytes)
+    encode_data_raw(rgb_data, pixel_buf, num_pixels, data_endian, consumed_bytes)
 }
 
 #[inline]
 pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
-    match data_endian {
-        DataEndian::Big => unsafe { encode_data_be_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) },
-        DataEndian::Little => unsafe { encode_data_le_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes) },
-    }
+    let pixel_buf = unsafe {
+        from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
+    };
+    unsafe { encode_data_raw_unchecked(rgb_data, pixel_buf, num_pixels, data_endian, consumed_bytes) }
 }
 
 #[inline]

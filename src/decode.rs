@@ -152,10 +152,10 @@ pub fn decode_data(pixel_data: &[u16], rgb_buf: &mut [u8], num_pixels: usize, da
 
 #[inline]
 pub unsafe fn decode_data_unchecked(pixel_data: &[u16], rgb_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
-    match data_endian {
-        DataEndian::Big => unsafe { decode_data_be_unchecked(pixel_data, rgb_buf, num_pixels, consumed_bytes) },
-        DataEndian::Little => unsafe { decode_data_le_unchecked(pixel_data, rgb_buf, num_pixels, consumed_bytes) },
-    }
+    let pixel_data = unsafe {
+        from_raw_parts(pixel_data.as_ptr().cast::<u8>(), pixel_data.len() * PIXEL_BYTES)
+    };
+    unsafe { decode_data_raw_unchecked(pixel_data, rgb_buf, num_pixels, data_endian, consumed_bytes) }
 }
 
 #[inline]
