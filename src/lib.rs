@@ -7,7 +7,7 @@ mod encode;
 mod decode;
 mod error;
 
-pub use crate::header::{IMAGE_SIGNATURE, IMAGE_HEADER_SIZE, ImageHeader};
+pub use crate::header::{IMAGE_SIGNATURE, IMAGE_HEADER_SIZE, IMAGE_CURRENT_VARSION, IMAGE_FLAG_ENDIAN_BIT, ImageHeader};
 pub use crate::spec::{DataEndian, ImageSpec};
 pub use crate::pixel::*;
 pub use encode::*;
