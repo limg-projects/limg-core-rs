@@ -74,16 +74,10 @@ pub unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize
 
 #[inline]
 pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
-    if rgb_data.len() < num_pixels * RGB_CHANNELS {
-        return Err(Error::InputBufferTooSmall);
-    }
-    if pixel_buf.len() < num_pixels {
-        return Err(Error::OutputBufferTooSmall);
-    }
-
-    unsafe {
-        Ok(encode_data_unchecked(rgb_data, pixel_buf, num_pixels, consumed_bytes))
-    }
+    let pixel_raw_buf = unsafe {
+        from_raw_parts_mut(pixel_buf.as_mut_ptr().cast::<u8>(), pixel_buf.len() * PIXEL_BYTES)
+    };
+    encode_data_raw(rgb_data, pixel_raw_buf, num_pixels, consumed_bytes)
 }
 
 #[inline]
