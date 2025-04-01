@@ -2,6 +2,7 @@ use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZ
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
 use crate::error::{Error, Result};
+use crate::ColorType;
 use ::core::slice::from_raw_parts_mut;
 
 /// Calculates the total number of bytes needed to encode an image with the given specification.
@@ -73,6 +74,25 @@ pub fn encode(rgb_data: &[u8], image_buf: &mut [u8], spec: &ImageSpec, consumed_
     }
 }
 
+#[inline]
+pub fn encode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
+    todo!()
+}
+
+#[cfg(feature = "alloc")]
+pub fn encode_to_vec(data: impl AsRef<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<alloc::vec::Vec<u8>> {
+    todo!()
+}
+
+#[cfg(feature = "std")]
+pub fn encode_to_write(data: impl AsRef<[u8]>, writer: &mut impl std::io::Write, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
+    todo!()
+}
+
+#[cfg(feature = "std")]
+pub fn encode_to_file(data: impl AsRef<[u8]>, path: impl AsRef<std::path::Path>, spec: &ImageSpec, color_type: ColorType) -> Result<()> {
+    todo!()
+}
 /// Encodes RGB byte data into a image buffer (including header and pixel data).
 /// returning how many bytes were written, without doing spec and bounds checking.
 /// 
