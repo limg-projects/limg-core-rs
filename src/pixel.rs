@@ -10,6 +10,12 @@ pub const PIXEL_G_MASK: u16 = 0x07E0;
 /// Bit mask for the blue component in RGB565 pixel format.
 pub const PIXEL_B_MASK: u16 = 0x001F;
 
+pub enum ColorType {
+    Rgb888,
+    Rgb565,
+    Rgba8888,
+}
+
 /// Converts an `[R, G, B]` array into a packed 16-bit RGB565 pixel.
 /// 
 /// # Examples
