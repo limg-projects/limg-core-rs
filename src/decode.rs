@@ -52,7 +52,7 @@ pub fn decode_header(data: &[u8], consumed_bytes: Option<&mut usize>) -> Result<
     let header = unsafe { decode_header_internal(data) };
 
     if header.signature != IMAGE_SIGNATURE_U32_NE || header.width == 0 || header.height == 0 {
-        return Err(Error::UnsupportFormat);
+        return Err(Error::UnsupportedFormat);
     }
 
     if let Some(consumed_bytes) = consumed_bytes {
