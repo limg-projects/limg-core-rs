@@ -21,7 +21,7 @@ use ::core::slice::from_raw_parts_mut;
 /// assert_eq!(bounds, 20012);
 /// ```
 #[inline(always)]
-pub const fn encode_bounds(spec: &ImageSpec) -> usize {
+pub const fn encoded_size(spec: &ImageSpec) -> usize {
     IMAGE_HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
@@ -65,7 +65,7 @@ pub fn encode(rgb_data: &[u8], image_buf: &mut [u8], spec: &ImageSpec, consumed_
     if rgb_data.len() < spec.num_pixels() * RGB_CHANNELS {
         return Err(Error::InputBufferTooSmall);
     }
-    if image_buf.len() < encode_bounds(spec) {
+    if image_buf.len() < encoded_size(spec) {
         return Err(Error::OutputBufferTooSmall);
     }
 
@@ -80,15 +80,15 @@ pub fn encode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, spec
     encode_args_check(data, spec, color_type)?;
 
     let buf = buf.as_mut();
-    let bounds = encode_bounds(spec);
+    let size = encoded_size(spec);
 
-    if buf.len() < bounds {
+    if buf.len() < size {
         return Err(Error::OutputBufferTooSmall);
     }
 
     encode_logic(data, buf, spec, color_type);
 
-    Ok(bounds)
+    Ok(size)
 }
 
 #[cfg(feature = "alloc")]
@@ -98,11 +98,11 @@ pub fn encode_to_vec(data: impl AsRef<[u8]>, spec: &ImageSpec, color_type: Color
     encode_args_check(data, spec, color_type)?;
 
     let vec = unsafe {
-        let bounds = encode_bounds(spec);
+        let size = encoded_size(spec);
 
         // 未初期化バッファの確保
-        let mut buf = alloc::vec::Vec::with_capacity(bounds);
-        buf.set_len(bounds);
+        let mut buf = alloc::vec::Vec::with_capacity(size);
+        buf.set_len(size);
 
         // バッファに書き込み
         encode_logic(data, &mut buf, spec, color_type);
