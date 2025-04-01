@@ -76,23 +76,80 @@ pub fn encode(rgb_data: &[u8], image_buf: &mut [u8], spec: &ImageSpec, consumed_
 
 #[inline]
 pub fn encode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
-    todo!()
+    let data = data.as_ref();
+    encode_args_check(data, spec, color_type)?;
+
+    let buf = buf.as_mut();
+    let bounds = encode_bounds(spec);
+
+    if buf.len() < bounds {
+        return Err(Error::OutputBufferTooSmall);
+    }
+
+    encode_logic(data, buf, spec, color_type);
+
+    Ok(bounds)
 }
 
 #[cfg(feature = "alloc")]
+#[inline]
 pub fn encode_to_vec(data: impl AsRef<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<alloc::vec::Vec<u8>> {
-    todo!()
+    let data = data.as_ref();
+    encode_args_check(data, spec, color_type)?;
+
+    let vec = unsafe {
+        let bounds = encode_bounds(spec);
+
+        // 未初期化バッファの確保
+        let mut buf = alloc::vec::Vec::with_capacity(bounds);
+        buf.set_len(bounds);
+
+        // バッファに書き込み
+        encode_logic(data, &mut buf, spec, color_type);
+
+        buf
+    };
+    
+    Ok(vec)
 }
 
 #[cfg(feature = "std")]
+#[inline]
 pub fn encode_to_write(data: impl AsRef<[u8]>, writer: &mut impl std::io::Write, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
-    todo!()
+    let data = data.as_ref();
+    encode_args_check(data, spec, color_type)?;
+
+    let buf = encode_to_vec(data, spec, color_type)?;
+    writer.write_all(&buf)?;
+    Ok(buf.len())
 }
 
 #[cfg(feature = "std")]
+#[inline]
 pub fn encode_to_file(data: impl AsRef<[u8]>, path: impl AsRef<std::path::Path>, spec: &ImageSpec, color_type: ColorType) -> Result<()> {
+    let data = data.as_ref();
+    encode_args_check(data, spec, color_type)?;
+
+    let mut file = std::fs::File::create(path)?;
+    encode_to_write(data.as_ref(), &mut file, spec, color_type)?;
+    Ok(())
+}
+
+fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Result<()> {
+    if spec.is_zero_dimensions() {
+        return Err(Error::ZeroImageDimensions);
+    }
+    if data.len() < spec.num_pixels() * RGB_CHANNELS {
+        return Err(Error::InputBufferTooSmall);
+    }
+
+    Ok(())
+}
+
+fn encode_logic(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) {
     todo!()
 }
+
 /// Encodes RGB byte data into a image buffer (including header and pixel data).
 /// returning how many bytes were written, without doing spec and bounds checking.
 /// 
