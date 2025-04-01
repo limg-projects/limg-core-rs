@@ -5,6 +5,14 @@ pub const IMAGE_SIGNATURE: [u8; 4] = *b"LIMG";
 pub(crate) const IMAGE_SIGNATURE_U32_NE: u32 = u32::from_ne_bytes(IMAGE_SIGNATURE);
 
 /// The size in bytes of the image header.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{ImageHeader, IMAGE_HEADER_SIZE};
+/// 
+/// assert_eq!(IMAGE_HEADER_SIZE, size_of::<ImageHeader>());
+/// ```
 pub const IMAGE_HEADER_SIZE: usize = size_of::<ImageHeader>();
 
 /// The current format version of the image header.

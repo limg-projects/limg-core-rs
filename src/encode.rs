@@ -4,11 +4,58 @@ use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
 use crate::error::{Error, Result};
 use ::core::slice::from_raw_parts_mut;
 
+/// Calculates the total number of bytes needed to encode an image with the given specification.
+///
+/// This includes both the image header and the pixel data region.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{ImageSpec, encode_bounds, rgb_to_pixel};
+/// 
+/// let spec = ImageSpec::new(100, 100, rgb_to_pixel([0, 0, 0]));
+/// let bounds = encode_bounds(&spec);
+/// 
+/// // HeaderSize(12) + width(100) * height(100) * PixelSize(2)
+/// assert_eq!(bounds, 20012);
+/// ```
 #[inline(always)]
 pub const fn encode_bounds(spec: &ImageSpec) -> usize {
     IMAGE_HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
+/// Encodes RGB byte data into a image buffer (including header and pixel data),
+/// returning how many bytes were written.
+/// 
+/// # Errors
+/// 
+/// Each call to `encode` may generate an error indicating that the operation could not be completed.
+/// If an error is returned then no data were written to buffer.
+/// 
+/// `consumed_bytes` and `image_buf` remain unchanged.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{Result, ImageSpec, rgb_to_pixel, encode, encode_bounds};
+/// 
+/// fn main() -> Result<()> {
+///     let spec = ImageSpec::new(2, 2, rgb_to_pixel([0, 0, 0]));
+///     let rgb_data = [
+///         255,   0,   0,
+///           0, 255,   0,
+///           0,   0, 255,
+///         255, 255, 255,
+///     ];
+///     let mut image_buf = [0u8; 1024];
+///     let mut consumed_bytes = 0;
+/// 
+///     let written_bytes = encode(&rgb_data, &mut image_buf, &spec, Some(&mut consumed_bytes))?;
+///     assert_eq!(written_bytes, encode_bounds(&spec));
+/// 
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode(rgb_data: &[u8], image_buf: &mut [u8], spec: &ImageSpec, consumed_bytes: Option<&mut usize>) -> Result<usize> {
     if spec.is_zero_dimensions() {
@@ -26,6 +73,36 @@ pub fn encode(rgb_data: &[u8], image_buf: &mut [u8], spec: &ImageSpec, consumed_
     }
 }
 
+/// Encodes RGB byte data into a image buffer (including header and pixel data).
+/// returning how many bytes were written, without doing spec and bounds checking.
+/// 
+/// For a safe alternative see [`encode`]
+/// 
+/// # Safety
+/// 
+/// Caller must guarantee that `rgb_data`, `image_buf`, and `spec` are valid and correctly sized.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{ImageSpec, rgb_to_pixel, encode_unchecked, encode_bounds};
+/// 
+/// fn main() {
+///     let spec = ImageSpec::new(2, 2, rgb_to_pixel([0, 0, 0]));
+///     let rgb_data = [
+///         255,   0,   0,
+///           0, 255,   0,
+///           0,   0, 255,
+///         255, 255, 255,
+///     ];
+///     let mut image_buf = [0u8; 1024];
+///     let mut consumed_bytes = 0;
+/// 
+///     let written_bytes = unsafe { encode_unchecked(&rgb_data, &mut image_buf, &spec, Some(&mut consumed_bytes)) };
+///     assert_eq!(written_bytes, encode_bounds(&spec));
+/// 
+/// }
+/// ```
 #[inline]
 pub unsafe fn encode_unchecked(rgb_data: &[u8], image_buf: &mut [u8], spec: &ImageSpec, consumed_bytes: Option<&mut usize>) -> usize {
     let mut written_bytes = 0;
@@ -38,6 +115,27 @@ pub unsafe fn encode_unchecked(rgb_data: &[u8], image_buf: &mut [u8], spec: &Ima
     written_bytes
 }
 
+/// Writes the image header into the given buffer.
+///
+/// # Errors
+/// 
+/// `buf` remain unchanged.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{Result, ImageSpec, rgb_to_pixel, encode_header, IMAGE_HEADER_SIZE};
+/// 
+/// fn main() -> Result<()> {
+///     let spec = ImageSpec::new(2, 2, rgb_to_pixel([0, 0, 0]));
+///     let mut buf = [0u8; 1024];
+/// 
+///     let written_bytes = encode_header(&mut buf, &spec)?;
+///     assert_eq!(written_bytes, IMAGE_HEADER_SIZE);
+/// 
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
     if spec.is_zero_dimensions() {
@@ -52,6 +150,27 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
     }
 }
 
+/// Writes the image header without any bounds checking.
+///
+/// For a safe alternative see [`encode_header`]
+/// 
+/// # Safety
+/// 
+/// `buf` must be at least [`IMAGE_HEADER_SIZE`] bytes long.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{ImageSpec, rgb_to_pixel, encode_header_unchecked, IMAGE_HEADER_SIZE};
+/// 
+/// fn main() {
+///     let spec = ImageSpec::new(2, 2, rgb_to_pixel([0, 0, 0]));
+///     let mut buf = [0u8; 1024];
+/// 
+///     let written_bytes = unsafe { encode_header_unchecked(&mut buf, &spec) };
+///     assert_eq!(written_bytes, IMAGE_HEADER_SIZE);
+/// }
+/// ```
 pub unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     let header = ImageHeaderInternal {
         signature: IMAGE_SIGNATURE_U32_NE,
@@ -74,6 +193,10 @@ pub unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize
 
 macro_rules! encode_data_endian {
     ($data: ident, $data_unchecked: ident, $data_raw: ident, $data_raw_unchecked: ident, $to_byte_fn: ident) => {
+        /// test $data
+        /// 
+        /// ```
+        /// ```
         #[inline]
         pub fn $data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, consumed_bytes: Option<&mut usize>) -> Result<usize> {
             let pixel_buf = unsafe {
@@ -125,6 +248,35 @@ macro_rules! encode_data_endian {
     };
 }
 
+/// Encodes RGB data into a `u16` pixel buffer, selecting endianness at runtime.
+/// 
+/// # Errors
+/// 
+/// `consumed_bytes` and `pixel_buf` remain unchanged.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{Result, DataEndian, encode_data, PIXEL_BYTES};
+/// 
+/// fn main() -> Result<()> {
+///     // [r, g, b] * 4
+///     let rgb_data = [
+///         255,   0,   0,
+///           0, 255,   0,
+///           0,   0, 255,
+///         255, 255, 255,
+///     ];
+/// 
+///     let mut pixel_buf = [0u16; 32];
+///     let mut consumed_bytes = 0;
+/// 
+///     let written_bytes = encode_data(&rgb_data, &mut pixel_buf, 4, DataEndian::Little, Some(&mut consumed_bytes))?;
+///     assert_eq!(written_bytes, 4 * PIXEL_BYTES);
+/// 
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> Result<usize> {
     let pixel_buf = unsafe {
@@ -133,6 +285,35 @@ pub fn encode_data(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, da
     encode_data_raw(rgb_data, pixel_buf, num_pixels, data_endian, consumed_bytes)
 }
 
+/// Encodes data without any safety checks.
+/// 
+/// For a safe alternative see [`encode_data`]
+/// 
+/// # Safety
+/// 
+/// The caller must ensure all input slices are valid and properly sized.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{DataEndian, encode_data_unchecked, PIXEL_BYTES};
+/// 
+/// fn main() {
+///     // [r, g, b] * 4
+///     let rgb_data = [
+///         255,   0,   0,
+///           0, 255,   0,
+///           0,   0, 255,
+///         255, 255, 255,
+///     ];
+/// 
+///     let mut pixel_buf = [0u16; 32];
+///     let mut consumed_bytes = 0;
+/// 
+///     let written_bytes = unsafe { encode_data_unchecked(&rgb_data, &mut pixel_buf, 4, DataEndian::Little, Some(&mut consumed_bytes)) };
+///     assert_eq!(written_bytes, 4 * PIXEL_BYTES);
+/// }
+/// ```
 #[inline]
 pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
     let pixel_buf = unsafe {
@@ -141,6 +322,35 @@ pub unsafe fn encode_data_unchecked(rgb_data: &[u8], pixel_buf: &mut [u16], num_
     unsafe { encode_data_raw_unchecked(rgb_data, pixel_buf, num_pixels, data_endian, consumed_bytes) }
 }
 
+/// Encodes RGB data directly into a raw byte buffer with the given endianness.
+/// 
+/// # Errors
+/// 
+/// `consumed_bytes` and `pixel_buf` remain unchanged.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{Result, DataEndian, encode_data_raw, PIXEL_BYTES};
+/// 
+/// fn main() -> Result<()> {
+///     // [r, g, b] * 4
+///     let rgb_data = [
+///         255,   0,   0,
+///           0, 255,   0,
+///           0,   0, 255,
+///         255, 255, 255,
+///     ];
+/// 
+///     let mut pixel_buf = [0u8; 64];
+///     let mut consumed_bytes = 0;
+/// 
+///     let written_bytes = encode_data_raw(&rgb_data, &mut pixel_buf, 4, DataEndian::Little, Some(&mut consumed_bytes))?;
+///     assert_eq!(written_bytes, 4 * PIXEL_BYTES);
+/// 
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> Result<usize> {
     if rgb_data.len() < num_pixels * RGB_CHANNELS {
@@ -155,6 +365,33 @@ pub fn encode_data_raw(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize,
     }
 }
 
+/// Performs raw pixel encoding without any validation checks.
+/// 
+/// # Safety
+/// 
+/// The caller must ensure all input slices are valid and properly sized.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::{DataEndian, encode_data_raw_unchecked, PIXEL_BYTES};
+/// 
+/// fn main() {
+///     // [r, g, b] * 4
+///     let rgb_data = [
+///         255,   0,   0,
+///           0, 255,   0,
+///           0,   0, 255,
+///         255, 255, 255,
+///     ];
+/// 
+///     let mut pixel_buf = [0u8; 64];
+///     let mut consumed_bytes = 0;
+/// 
+///     let written_bytes = unsafe { encode_data_raw_unchecked(&rgb_data, &mut pixel_buf, 4, DataEndian::Little, Some(&mut consumed_bytes)) };
+///     assert_eq!(written_bytes, 4 * PIXEL_BYTES);
+/// }
+/// ```
 #[inline]
 pub unsafe fn encode_data_raw_unchecked(rgb_data: &[u8], pixel_buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, consumed_bytes: Option<&mut usize>) -> usize {
     match data_endian {
