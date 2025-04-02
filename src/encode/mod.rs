@@ -86,7 +86,7 @@ pub fn encode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, spec
         return Err(Error::OutputBufferTooSmall);
     }
 
-    encode_logic(data, buf, spec, color_type);
+    unsafe { encode_logic(data, buf, spec, color_type) };
 
     Ok(size)
 }
@@ -146,7 +146,39 @@ fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Re
     Ok(())
 }
 
-fn encode_logic(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) {
+unsafe fn encode_logic(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) {
+    let header = ImageHeaderInternal {
+        signature: IMAGE_SIGNATURE_U32_NE,
+        version: IMAGE_CURRENT_VARSION,
+        flag: spec.flag(),
+        width: spec.width.to_le(),
+        height: spec.height.to_le(),
+        transparent_color: spec.transparent_color.to_le(),
+    };
+
+    let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();
+
+    unsafe {
+        ::core::ptr::copy_nonoverlapping(header_ptr, buf.as_mut_ptr(), IMAGE_HEADER_SIZE);
+    }
+
+    let buf = unsafe { buf.get_unchecked_mut(IMAGE_HEADER_SIZE..) };
+
+    match color_type {
+        ColorType::Rgb888 => {
+
+        },
+        ColorType::Rgb565 => todo!(),
+        ColorType::Rgba8888 => todo!(),
+    }
+
+    match spec.data_endian {
+        DataEndian::Big => {
+
+        },
+        DataEndian::Little => todo!(),
+    }
+    
     todo!()
 }
 
