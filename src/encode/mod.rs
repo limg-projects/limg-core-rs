@@ -1,9 +1,17 @@
+mod scalar;
+
 use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, rgb_to_pixel};
 use crate::error::{Error, Result};
 use crate::ColorType;
 use ::core::slice::from_raw_parts_mut;
+
+use scalar::{
+    encode_from_rgb888_be,   encode_from_rgb888_le,
+    encode_from_rgb565_be,   encode_from_rgb565_le,
+    encode_from_rgba8888_be, encode_from_rgba8888_le,
+};
 
 /// Calculates the total number of bytes needed to encode an image with the given specification.
 ///
@@ -163,23 +171,26 @@ unsafe fn encode_logic(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
     }
 
     let buf = unsafe { buf.get_unchecked_mut(IMAGE_HEADER_SIZE..) };
+    let num_pixels = spec.num_pixels();
 
-    match color_type {
-        ColorType::Rgb888 => {
-
-        },
-        ColorType::Rgb565 => todo!(),
-        ColorType::Rgba8888 => todo!(),
+    unsafe {
+        match spec.data_endian {
+            DataEndian::Big => {
+                match color_type {
+                    ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
+                    ColorType::Rgb565 => encode_from_rgb565_be(data, buf, num_pixels),
+                    ColorType::Rgba8888 => encode_from_rgba8888_be(data, buf, num_pixels),
+                }
+            },
+            DataEndian::Little => {
+                match color_type {
+                    ColorType::Rgb888 => encode_from_rgb888_le(data, buf, num_pixels),
+                    ColorType::Rgb565 => encode_from_rgb565_le(data, buf, num_pixels),
+                    ColorType::Rgba8888 => encode_from_rgba8888_le(data, buf, num_pixels),
+                }
+            },
+        }
     }
-
-    match spec.data_endian {
-        DataEndian::Big => {
-
-        },
-        DataEndian::Little => todo!(),
-    }
-    
-    todo!()
 }
 
 /// Encodes RGB byte data into a image buffer (including header and pixel data).
