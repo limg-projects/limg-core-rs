@@ -1,9 +1,16 @@
+mod scalar;
+
 use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, pixel_to_rgb};
 use crate::error::{Error, Result};
 use ::core::slice::from_raw_parts;
 
+use scalar::{
+    decode_to_rgb888_be,   decode_to_rgb888_le,
+    decode_to_rgb565_be,   decode_to_rgb565_le,
+    decode_to_rgba8888_be, decode_to_rgba8888_le
+};
 pub fn decode(image_data: &[u8], rgb_buf: &mut [u8], consumed_bytes: Option<&mut usize>) -> Result<(ImageSpec, usize)> {
     let mut total_consumed_bytes = 0;
     let mut data_consumed_bytes = 0;
