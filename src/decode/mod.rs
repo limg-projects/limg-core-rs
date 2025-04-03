@@ -11,6 +11,44 @@ use scalar::{
     decode_to_rgb565_be,   decode_to_rgb565_le,
     decode_to_rgba8888_be, decode_to_rgba8888_le
 };
+
+#[inline]
+pub fn decode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>) -> Result<(ImageSpec, usize)> {
+    todo!()
+}
+
+#[cfg(feature = "alloc")]
+#[inline]
+pub fn decode_to_vec(data: impl AsRef<[u8]>) -> Result<(ImageSpec, Vec<u8>)> {
+    todo!()
+}
+
+#[cfg(feature = "std")]
+#[inline]
+pub fn decode_from_read_to_buffer(read: &mut impl std::io::Read, buf: &mut impl AsMut<[u8]>) -> Result<(ImageSpec, usize)> {
+    todo!()
+}
+
+#[cfg(feature = "std")]
+#[inline]
+pub fn decode_from_read_to_vec(read: &mut impl std::io::Read) -> Result<(ImageSpec, Vec<u8>)> {
+    todo!()
+}
+
+#[cfg(feature = "std")]
+#[inline]
+pub fn decode_from_file_to_buffer(path: impl AsRef<std::path::Path>, buf: &mut impl AsMut<[u8]>) -> Result<(ImageSpec, usize)> {
+    let mut file = std::fs::File::open(path)?;
+    decode_from_read_to_buffer(&mut file, buf)
+}
+
+#[cfg(feature = "std")]
+#[inline]
+pub fn decode_from_file_to_vec(path: impl AsRef<std::path::Path>) -> Result<(ImageSpec, Vec<u8>)> {
+    let mut file = std::fs::File::open(path)?;
+    decode_from_read_to_vec(&mut file)
+}
+
 pub fn decode(image_data: &[u8], rgb_buf: &mut [u8], consumed_bytes: Option<&mut usize>) -> Result<(ImageSpec, usize)> {
     let mut total_consumed_bytes = 0;
     let mut data_consumed_bytes = 0;
