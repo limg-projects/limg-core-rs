@@ -5,7 +5,17 @@ use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
+#[cfg(not(feature = "simd"))]
 use scalar::{
+    encode_from_rgb888_be,   encode_from_rgb888_le,
+    encode_from_rgb565_be,   encode_from_rgb565_le,
+    encode_from_rgba8888_be, encode_from_rgba8888_le,
+};
+
+#[cfg(feature = "simd")]
+mod simd;
+#[cfg(feature = "simd")]
+use simd::{
     encode_from_rgb888_be,   encode_from_rgb888_le,
     encode_from_rgb565_be,   encode_from_rgb565_le,
     encode_from_rgba8888_be, encode_from_rgba8888_le,
