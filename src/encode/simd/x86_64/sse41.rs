@@ -14,7 +14,7 @@ struct M128I8([i8; 16]);
 impl M128I8 {
     #[inline(always)]
     pub const fn as_vector(self) -> __m128i {
-        unsafe { ::core::mem::transmute(self) }
+        unsafe { ::core::mem::transmute(self.0) }
     }
 }
 
@@ -246,44 +246,124 @@ encode_from_endian!("little", _mm_le_epi16, encode_from_rgb888_le, encode_from_r
 
 #[cfg(test)]
 mod tests {
-    use crate::{encode::scalar, DataEndian, ImageSpec};
+    use crate::encode::scalar;
+    use crate::{rgb_to_pixel, PIXEL_BYTES};
 
-    const WIDTH: usize = 8192;
-    const HEIGHT: usize = 8192;
+    const NUM_PIXELS: usize = 6;
+
+    const RGB888_DATA: [u8; 3 * NUM_PIXELS] = [
+          0,   0,   0,
+        255,   0,   0,
+        0,   255,   0,
+        0,     0, 255,
+        128, 128, 128,
+        255, 255, 255,
+    ];
+
+    const RGB565_DATA: [u16; NUM_PIXELS] = [
+        rgb_to_pixel([  0,   0,   0]),
+        rgb_to_pixel([255,   0,   0]),
+        rgb_to_pixel([  0, 255,   0]),
+        rgb_to_pixel([  0,   0, 255]),
+        rgb_to_pixel([128, 128, 128]),
+        rgb_to_pixel([255, 255, 255]),
+    ];
+
+    const RGBA8888_DATA: [u8; 4 * NUM_PIXELS] = [
+          0,   0,   0,   0,
+        255,   0,   0, 255,
+        0,   255,   0,   0,
+        0,     0, 255, 255,
+        128, 128, 128, 128,
+        255, 255, 255, 255,
+    ];
 
     #[test]
-    fn encode_test2() {
-        const LEN: usize = WIDTH as usize * HEIGHT as usize;
-        let data = std::fs::read("rgba_image.raw").unwrap();
+    fn encode_rgb888_x86_64() {
+        let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
-        let mut spec = ImageSpec::new(WIDTH as u16, HEIGHT as u16);
-        spec.data_endian = DataEndian::Big;
-        // spec.transparent_color = Some(rgb_to_pixel([255, 0, 255]));
+        unsafe {
+            scalar::encode_from_rgb888_be(&RGB888_DATA, &mut scalar_buf, NUM_PIXELS);
+            super::encode_from_rgb888_be(&RGB888_DATA, &mut sse41_buf, NUM_PIXELS);
+        }
 
-        let mut buf = Vec::with_capacity(data.len());
-        unsafe { buf.set_len(data.len()); }
+        assert_eq!(scalar_buf, sse41_buf);
 
-        let mut now = std::time::Instant::now();
+        unsafe {
+            scalar::encode_from_rgb888_le(&RGB888_DATA, &mut scalar_buf, NUM_PIXELS);
+            super::encode_from_rgb888_le(&RGB888_DATA, &mut sse41_buf, NUM_PIXELS);
+        }
 
-        println!("len: {}", data.len() / LEN);
+        assert_eq!(scalar_buf, sse41_buf);
+    }
 
-        unsafe { scalar::encode_from_rgba8888_le(&data, &mut buf, LEN) };
+    #[test]
+    fn encode_rgb565_x86_64() {
+        let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
-        println!("scalar time: {:?}", now.elapsed());
+        let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
+        let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
-        let encode_scalar = buf.clone();
+        unsafe {
+            scalar::encode_from_rgb565_be(data, &mut scalar_buf, NUM_PIXELS);
+            super::encode_from_rgb565_be(data, &mut sse41_buf, NUM_PIXELS);
+        }
 
-        now = std::time::Instant::now();
+        assert_eq!(scalar_buf, sse41_buf);
 
-        unsafe { super::encode_from_rgba8888_le(&data, &mut buf, LEN) };
+        unsafe {
+            scalar::encode_from_rgb565_le(data, &mut scalar_buf, NUM_PIXELS);
+            super::encode_from_rgb565_le(data, &mut sse41_buf, NUM_PIXELS);
+        }
 
-        println!("sse4.1 time: {:?}", now.elapsed());
+        assert_eq!(scalar_buf, sse41_buf);
+    }
 
-        let encode_sse41 = buf.clone();
+    #[test]
+    fn encode_rgba8888_x86_64() {
+        let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
-        println!("is qeual: {}", encode_scalar == encode_sse41);
+        unsafe {
+            scalar::encode_from_rgba8888_be(&RGBA8888_DATA, &mut scalar_buf, NUM_PIXELS);
+            super::encode_from_rgba8888_be(&RGBA8888_DATA, &mut sse41_buf, NUM_PIXELS);
+        }
 
-        // std::fs::write("scalar.limg", encode_scalar).unwrap();
-        // std::fs::write("sse41.limg", encode_sse41).unwrap();
+        assert_eq!(scalar_buf, sse41_buf);
+
+        unsafe {
+            scalar::encode_from_rgba8888_le(&RGBA8888_DATA, &mut scalar_buf, NUM_PIXELS);
+            super::encode_from_rgba8888_le(&RGBA8888_DATA, &mut sse41_buf, NUM_PIXELS);
+        }
+
+        assert_eq!(scalar_buf, sse41_buf);
+    }
+
+    #[test]
+    fn encode_endian_x86_64() {
+        let mut a_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut b_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+
+        let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
+        let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
+
+        unsafe {
+            super::encode_from_rgb888_be(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+
+            super::encode_from_rgb565_be(data, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+            super::encode_from_rgba8888_be(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+
+            
+            super::encode_from_rgb888_le(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+
+            super::encode_from_rgb565_le(data, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+            super::encode_from_rgba8888_le(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+        }
     }
 }
