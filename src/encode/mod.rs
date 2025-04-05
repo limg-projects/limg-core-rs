@@ -1,5 +1,7 @@
 mod scalar;
 
+mod simd;
+
 use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
