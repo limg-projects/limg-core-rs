@@ -60,7 +60,7 @@ macro_rules! decode_endian {
                 unsafe {
                     let pixel = data_ptr.read_unaligned().$endian_fn();
                     let rgb = pixel_to_rgb(pixel);
-                    buf_ptr.write([rgb[0], rgb[1], rgb[2], 0]);
+                    buf_ptr.write([rgb[0], rgb[1], rgb[2], u8::MAX]);
         
                     data_ptr = data_ptr.add(1);
                     buf_ptr = buf_ptr.add(1);

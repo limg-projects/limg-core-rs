@@ -98,7 +98,7 @@ fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Re
     if spec.is_zero_dimensions() {
         return Err(Error::ZeroImageDimensions);
     }
-    if data.len() < spec.num_pixels() * RGB_CHANNELS {
+    if data.len() < spec.num_pixels() * color_type.bytes_per_pixel() {
         return Err(Error::InputBufferTooSmall);
     }
 
