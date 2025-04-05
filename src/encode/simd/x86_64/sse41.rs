@@ -249,14 +249,16 @@ mod tests {
     use crate::encode::scalar;
     use crate::{rgb_to_pixel, PIXEL_BYTES};
 
-    const NUM_PIXELS: usize = 6;
+    const NUM_PIXELS: usize = 8;
 
     const RGB888_DATA: [u8; 3 * NUM_PIXELS] = [
           0,   0,   0,
         255,   0,   0,
         0,   255,   0,
         0,     0, 255,
+        100, 100, 100,
         128, 128, 128,
+        200, 200, 200,
         255, 255, 255,
     ];
 
@@ -265,7 +267,9 @@ mod tests {
         rgb_to_pixel([255,   0,   0]),
         rgb_to_pixel([  0, 255,   0]),
         rgb_to_pixel([  0,   0, 255]),
+        rgb_to_pixel([100, 100, 100]),
         rgb_to_pixel([128, 128, 128]),
+        rgb_to_pixel([200, 200, 200]),
         rgb_to_pixel([255, 255, 255]),
     ];
 
@@ -274,7 +278,9 @@ mod tests {
         255,   0,   0, 255,
         0,   255,   0,   0,
         0,     0, 255, 255,
+        100, 100, 100, 100,
         128, 128, 128, 128,
+        200, 200, 200, 200,
         255, 255, 255, 255,
     ];
 
