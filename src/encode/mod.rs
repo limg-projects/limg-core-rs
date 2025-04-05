@@ -2,9 +2,8 @@ mod scalar;
 
 use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
-use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES};
+use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
-use crate::ColorType;
 
 use scalar::{
     encode_from_rgb888_be,   encode_from_rgb888_le,

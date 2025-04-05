@@ -2,10 +2,8 @@ mod scalar;
 
 use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
-use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, pixel_to_rgb};
+use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
-use crate::ColorType;
-use ::core::slice::from_raw_parts;
 use ::core::slice::from_raw_parts_mut;
 use ::core::mem::MaybeUninit;
 
