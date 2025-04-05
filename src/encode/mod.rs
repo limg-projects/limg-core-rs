@@ -112,7 +112,7 @@ unsafe fn encode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
         flag: spec.flag(),
         width: spec.width.to_le(),
         height: spec.height.to_le(),
-        transparent_color: spec.transparent_color.to_le(),
+        transparent_color: spec.transparent_color.unwrap_or(0),
     };
 
     let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();

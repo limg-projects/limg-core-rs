@@ -24,6 +24,7 @@ pub const IMAGE_CURRENT_VARSION: u8 = 1;
 /// Otherwise, big-endian is assumed.
 pub const IMAGE_FLAG_ENDIAN_BIT: u8 = 0b00000001;
 
+pub const IMAGE_FLAG_USE_TRANSPARENT_BIT: u8 = 0b00000010;
 
 /// The public representation of an image file header.
 ///

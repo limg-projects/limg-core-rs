@@ -1,6 +1,6 @@
 mod scalar;
 
-use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES, pixel_to_rgb};
 use crate::error::{Error, Result};
@@ -164,11 +164,13 @@ fn header_to_spec(header: &ImageHeaderInternal) -> Result<ImageSpec> {
     }
 
     let data_endian = unsafe { ::core::mem::transmute(header.flag & IMAGE_FLAG_ENDIAN_BIT) };
+    let use_transparent = (header.flag & IMAGE_FLAG_USE_TRANSPARENT_BIT) != 0;
+    let transparent_color = if use_transparent { Some(header.transparent_color) } else { None };
 
     Ok(ImageSpec {
         width: header.width.to_le(),
         height: header.height.to_le(),
-        transparent_color: header.transparent_color,
+        transparent_color,
         data_endian
     })
 }
@@ -183,14 +185,26 @@ unsafe fn decode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
                 match color_type {
                     ColorType::Rgb888 => decode_to_rgb888_be(data, buf, num_pixels),
                     ColorType::Rgb565 => decode_to_rgb565_be(data, buf, num_pixels),
-                    ColorType::Rgba8888 => decode_to_rgba8888_be(data, buf, num_pixels),
+                    ColorType::Rgba8888 => {
+                        if let Some(transparent_color) = spec.transparent_color {
+                            decode_to_rgba8888_alpha_be(data, buf, transparent_color, num_pixels)
+                        } else {
+                            decode_to_rgba8888_be(data, buf, num_pixels)
+                        }
+                    }
                 }
             },
             DataEndian::Little => {
                 match color_type {
                     ColorType::Rgb888 => decode_to_rgb888_le(data, buf, num_pixels),
                     ColorType::Rgb565 => decode_to_rgb565_le(data, buf, num_pixels),
-                    ColorType::Rgba8888 => decode_to_rgba8888_le(data, buf, num_pixels),
+                    ColorType::Rgba8888 => {
+                        if let Some(transparent_color) = spec.transparent_color {
+                            decode_to_rgba8888_alpha_le(data, buf, transparent_color, num_pixels)
+                        } else {
+                            decode_to_rgba8888_le(data, buf, num_pixels)
+                        }
+                    }
                 }
             },
         }
