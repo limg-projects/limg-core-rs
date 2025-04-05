@@ -226,7 +226,7 @@ macro_rules! encode_from_endian {
                     // ピクセルに合成
                     let pixel = $endian_fn(_mm_or_si128(r_pixel, _mm_or_si128(g_pixel, b_pixel)));
         
-                    _mm_storeu_si128(dst_ptr, pixel);
+                    _mm_storeu_si128(dst_ptr.cast::<__m128i>(), pixel);
                     
                     src_ptr = src_ptr.add(4 * COLOR_TYPE.bytes_per_pixel());
                     dst_ptr = dst_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
