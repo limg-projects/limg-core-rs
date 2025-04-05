@@ -15,7 +15,8 @@ use alloc::vec::Vec;
 use scalar::{
     decode_to_rgb888_be,   decode_to_rgb888_le,
     decode_to_rgb565_be,   decode_to_rgb565_le,
-    decode_to_rgba8888_be, decode_to_rgba8888_le
+    decode_to_rgba8888_be, decode_to_rgba8888_le,
+    decode_to_rgba8888_alpha_be, decode_to_rgba8888_alpha_le,
 };
 
 #[inline]
