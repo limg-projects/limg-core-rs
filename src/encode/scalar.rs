@@ -54,9 +54,9 @@ macro_rules! encode_from_endian {
 
         #[inline(always)]
         pub unsafe fn $rgba8888(data: &[u8], buf: &mut [u8], num_pixels: usize) {
-            const COLOR_BYTES: usize = ColorType::bytes_per_pixel(ColorType::Rgba8888);
+            const COLOR_TYPE: ColorType = ColorType::Rgba8888;
 
-            let mut data_ptr = data.as_ptr().cast::<[u8; COLOR_BYTES]>();
+            let mut data_ptr = data.as_ptr().cast::<[u8; COLOR_TYPE.bytes_per_pixel()]>();
             let mut buf_ptr = buf.as_mut_ptr().cast::<u16>();
         
             for _ in 0..num_pixels {
