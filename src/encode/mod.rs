@@ -2,9 +2,8 @@ mod scalar;
 
 use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
-use crate::pixel::{RGB_CHANNELS, PIXEL_BYTES};
+use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
-use crate::ColorType;
 
 use scalar::{
     encode_from_rgb888_be,   encode_from_rgb888_le,
@@ -98,7 +97,7 @@ fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Re
     if spec.is_zero_dimensions() {
         return Err(Error::ZeroImageDimensions);
     }
-    if data.len() < spec.num_pixels() * RGB_CHANNELS {
+    if data.len() < spec.num_pixels() * color_type.bytes_per_pixel() {
         return Err(Error::InputBufferTooSmall);
     }
 
@@ -112,7 +111,7 @@ unsafe fn encode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
         flag: spec.flag(),
         width: spec.width.to_le(),
         height: spec.height.to_le(),
-        transparent_color: spec.transparent_color.to_le(),
+        transparent_color: spec.transparent_color.unwrap_or(0),
     };
 
     let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();

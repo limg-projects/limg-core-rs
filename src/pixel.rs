@@ -17,6 +17,16 @@ pub enum ColorType {
     Rgba8888,
 }
 
+impl ColorType {
+    pub const fn bytes_per_pixel(self) -> usize {
+        match self {
+            ColorType::Rgb888 => 3,
+            ColorType::Rgb565 => 2,
+            ColorType::Rgba8888 => 4,
+        }
+    }
+}
+
 /// Converts an `[R, G, B]` array into a packed 16-bit RGB565 pixel.
 /// 
 /// # Examples
