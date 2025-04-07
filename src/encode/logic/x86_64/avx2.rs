@@ -219,66 +219,9 @@ fn print256(txt: &str, value: __m256i) {
 #[cfg(test)]
 mod tests {
     use crate::encode::logic::scalar;
-    use crate::{rgb_to_pixel, PIXEL_BYTES};
+    use crate::pixel::PIXEL_BYTES;
 
-    const NUM_PIXELS: usize = 16;
-
-    const RGB888_DATA: [u8; 3 * NUM_PIXELS] = [
-          0,   0,   0,
-        255,   0,   0,
-        0,   255,   0,
-        0,     0, 255,
-        255, 255,   0,
-          0, 255, 255,
-        255,   0, 255,
-          0, 128, 255,
-        255, 128,   0,
-         50,  50,  50,
-        100, 100, 100,
-        128, 128, 128,
-        150, 150, 150,
-        200, 200, 200,
-        250, 250, 250,
-        255, 255, 255,
-    ];
-
-    const RGB565_DATA: [u16; NUM_PIXELS] = [
-        rgb_to_pixel([  0,   0,   0]),
-        rgb_to_pixel([255,   0,   0]),
-        rgb_to_pixel([  0, 255,   0]),
-        rgb_to_pixel([  0,   0, 255]),
-        rgb_to_pixel([255, 255,   0]),
-        rgb_to_pixel([  0, 255, 255]),
-        rgb_to_pixel([255,   0, 255]),
-        rgb_to_pixel([  0, 128, 255]),
-        rgb_to_pixel([255, 128,   0]),
-        rgb_to_pixel([ 50,  50,  50]),
-        rgb_to_pixel([100, 100, 100]),
-        rgb_to_pixel([128, 128, 128]),
-        rgb_to_pixel([150, 150, 150]),
-        rgb_to_pixel([200, 200, 200]),
-        rgb_to_pixel([250, 250, 250]),
-        rgb_to_pixel([255, 255, 255]),
-    ];
-
-    const RGBA8888_DATA: [u8; 4 * NUM_PIXELS] = [
-        255,   0,   0,   0,
-        255,   0,   0, 255,
-        0,   255,   0,   0,
-        0,     0, 255, 255,
-        255, 255,   0,   0,
-          0, 255, 255, 255,
-        255,   0, 255,   0,
-          0, 128, 255, 255,
-        255, 128,   0,   0,
-         50,  50,  50,  50,
-        100, 100, 100, 100,
-        128, 128, 128, 128,
-        150, 150, 150, 150,
-        200, 200, 200, 200,
-        250, 250, 250, 250,
-        255, 255, 255, 255
-    ];
+    use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     // #[test]
     // fn encode_rgb888_x86_64() {
