@@ -1,6 +1,6 @@
 use crate::{pixel::PIXEL_BYTES, ColorType};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use crate::encode::scalar;
+use crate::encode::logic::scalar;
 
 const PIXEL_BLOCK_LEN: usize = 8; // u16(16 bit) * 8 = 128 bit
 
@@ -246,7 +246,7 @@ encode_from_endian!("little", _mm_le_epi16, encode_from_rgb888_le, encode_from_r
 
 #[cfg(test)]
 mod tests {
-    use crate::encode::scalar;
+    use crate::encode::logic::scalar;
     use crate::{rgb_to_pixel, PIXEL_BYTES};
 
     const NUM_PIXELS: usize = 8;

@@ -1,6 +1,6 @@
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use crate::encode::scalar;
+use crate::encode::logic::scalar;
 
 const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit
 
@@ -218,7 +218,7 @@ fn print256(txt: &str, value: __m256i) {
 
 #[cfg(test)]
 mod tests {
-    use crate::encode::scalar;
+    use crate::encode::logic::scalar;
     use crate::{rgb_to_pixel, PIXEL_BYTES};
 
     const NUM_PIXELS: usize = 16;
