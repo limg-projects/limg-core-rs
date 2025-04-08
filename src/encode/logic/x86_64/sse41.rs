@@ -257,7 +257,7 @@ mod tests {
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
-    fn encode_rgb888_x86_64() {
+    fn encode_rgb888_x86_64_sse41() {
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
