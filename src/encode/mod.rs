@@ -60,6 +60,106 @@ fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Re
     Ok(())
 }
 
+#[inline]
+pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
+    let num_pixels = spec.width as usize * spec.height as usize;
+
+    if num_pixels == 0 {
+        return Err(Error::ZeroImageDimensions);
+    }
+    if data.len() < color_type.bytes_per_pixel() * num_pixels {
+        return Err(Error::InputBufferTooSmall);
+    }
+    if buf.len() < IMAGE_HEADER_SIZE + PIXEL_BYTES * num_pixels {
+        return Err(Error::OutputBufferTooSmall);
+    }
+
+    let mut written_size = 0;
+
+    unsafe {
+        written_size += encode_header_unchecked(buf.get_unchecked_mut(..IMAGE_HEADER_SIZE), spec);
+        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(IMAGE_HEADER_SIZE..), num_pixels, spec.data_endian, color_type);
+    }
+
+    debug_assert_eq!(written_size, encoded_size(spec));
+
+    Ok(written_size)
+}
+
+#[inline]
+pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
+    let num_pixel = spec.width as usize * spec.height as usize;
+
+    if num_pixel == 0 {
+        return Err(Error::ZeroImageDimensions);
+    }
+
+    if buf.len() < IMAGE_HEADER_SIZE {
+        return Err(Error::OutputBufferTooSmall);
+    }
+
+    unsafe {
+        Ok(encode_header_unchecked(buf, spec))
+    }
+}
+
+unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
+    let header = ImageHeaderInternal {
+        signature: IMAGE_SIGNATURE_U32_NE,
+        version: IMAGE_CURRENT_VARSION,
+        flag: spec.flag(),
+        width: spec.width.to_le(),
+        height: spec.height.to_le(),
+        transparent_color: spec.transparent_color.unwrap_or(0).to_le(),
+    };
+
+    let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();
+
+    unsafe {
+        ::core::ptr::copy_nonoverlapping(header_ptr, buf.as_mut_ptr(), IMAGE_HEADER_SIZE);
+    }
+
+    IMAGE_HEADER_SIZE
+}
+
+#[inline(always)]
+pub fn encode_data(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> Result<usize> {
+    if data.len() < color_type.bytes_per_pixel() * num_pixels {
+        return Err(Error::InputBufferTooSmall);
+    }
+
+    if buf.len() < PIXEL_BYTES * num_pixels {
+        return Err(Error::OutputBufferTooSmall);
+    }
+
+    unsafe {
+        Ok(encode_data_unchecked(data, buf, num_pixels, data_endian, color_type))
+    }
+}
+
+pub unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> usize {
+    unsafe {
+        match data_endian {
+            DataEndian::Big => {
+                match color_type {
+                    ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
+                    ColorType::Rgb565 => encode_from_rgb565_be(data, buf, num_pixels),
+                    ColorType::Rgba8888 => encode_from_rgba8888_be(data, buf, num_pixels),
+                }
+            },
+            DataEndian::Little => {
+                match color_type {
+                    ColorType::Rgb888 => encode_from_rgb888_le(data, buf, num_pixels),
+                    ColorType::Rgb565 => encode_from_rgb565_le(data, buf, num_pixels),
+                    ColorType::Rgba8888 => encode_from_rgba8888_le(data, buf, num_pixels),
+                }
+            },
+        }
+    }
+
+    PIXEL_BYTES * color_type.bytes_per_pixel()
+}
+
 unsafe fn encode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) {
     let header = ImageHeaderInternal {
         signature: IMAGE_SIGNATURE_U32_NE,
