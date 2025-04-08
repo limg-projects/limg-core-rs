@@ -258,6 +258,10 @@ mod tests {
 
     #[test]
     fn encode_rgb888_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+        
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -277,7 +281,11 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgb565_x86_64() {
+    fn encode_rgb565_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -300,7 +308,11 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgba8888_x86_64() {
+    fn encode_rgba8888_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -320,7 +332,11 @@ mod tests {
     }
 
     #[test]
-    fn encode_endian_x86_64() {
+    fn encode_endian_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+
         let mut a_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut b_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
