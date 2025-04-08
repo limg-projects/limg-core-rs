@@ -124,6 +124,7 @@ macro_rules! encode_from_endian {
 
             // 先頭の2ピクセル先に処理する
             unsafe { scalar::$rgb888(data, buf, 2); }
+            let num_pixels = num_pixels - 2;
 
             let pixel_move_mask = unsafe { _mm256_setr_epi32(0, 4, 1, 5, -1, -1, -1, -1) };
 
@@ -134,7 +135,7 @@ macro_rules! encode_from_endian {
 
             
             let pixel_blocks = (num_pixels - 2) / PIXEL_BLOCK_LEN;
-            let remainder = PIXEL_BLOCK_LEN - (COLOR_TYPE.bytes_per_pixel() * pixel_blocks);
+            let remainder = num_pixels - (PIXEL_BLOCK_LEN * pixel_blocks);
         
             for _ in 0..pixel_blocks {
                 unsafe {
@@ -182,7 +183,7 @@ macro_rules! encode_from_endian {
         
                     _mm256_storeu_si256(dst_ptr.cast::<__m256i>(), pixel);
                     
-                    src_ptr = src_ptr.add(4 * COLOR_TYPE.bytes_per_pixel());
+                    src_ptr = src_ptr.add(8 * COLOR_TYPE.bytes_per_pixel());
                     dst_ptr = dst_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
                 }
             }
@@ -190,7 +191,7 @@ macro_rules! encode_from_endian {
             let data = unsafe { from_raw_parts(src_ptr.add(4), remainder * COLOR_TYPE.bytes_per_pixel()) };
             let buf = unsafe { from_raw_parts_mut(dst_ptr, remainder * PIXEL_BYTES) };
         
-            unsafe { scalar::$rgba8888(data, buf, remainder) }
+            unsafe { scalar::$rgb888(data, buf, remainder) }
         }
 
         // -- rgb565 ------------------------------
@@ -295,7 +296,7 @@ macro_rules! encode_from_endian {
         
                     _mm256_storeu_si256(dst_ptr.cast::<__m256i>(), pixel);
                     
-                    src_ptr = src_ptr.add(4 * COLOR_TYPE.bytes_per_pixel());
+                    src_ptr = src_ptr.add(8 * COLOR_TYPE.bytes_per_pixel());
                     dst_ptr = dst_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
                 }
             }
