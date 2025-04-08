@@ -9,4 +9,3 @@ edition = "2024"
 default = ["std"]
 std = ["alloc"]
 alloc = []
-simd = []

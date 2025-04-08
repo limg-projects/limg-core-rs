@@ -1,6 +1,6 @@
 use crate::{pixel::PIXEL_BYTES, ColorType};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use crate::encode::scalar;
+use crate::encode::logic::scalar;
 
 const PIXEL_BLOCK_LEN: usize = 8; // u16(16 bit) * 8 = 128 bit
 
@@ -94,6 +94,11 @@ macro_rules! encode_from_endian {
             const R_SHUFFLE_MASK_2: M128I8 = M128I8([-1, -1, -1, -1, 0, 3, 6, 9, -1, -1, -1, -1, -1, -1, -1, -1]);
             const G_SHUFFLE_MASK_2: M128I8 = M128I8([-1, -1, -1, -1, 1, 4, 7, 10, -1, -1, -1, -1, -1, -1, -1, -1]);
             const B_SHUFFLE_MASK_2: M128I8 = M128I8([-1, -1, -1, -1, 2, 5, 8, 11, -1, -1, -1, -1, -1, -1, -1, -1]);
+
+            // バッファオーバーしないための後ピクセルを加味する
+            if num_pixels < PIXEL_BLOCK_LEN + 2 {
+                return unsafe { scalar::$rgb888(data, buf, num_pixels) };
+            }
         
             let mut src_ptr = data.as_ptr();
             let mut dst_ptr = buf.as_mut_ptr();
@@ -246,46 +251,17 @@ encode_from_endian!("little", _mm_le_epi16, encode_from_rgb888_le, encode_from_r
 
 #[cfg(test)]
 mod tests {
-    use crate::encode::scalar;
-    use crate::{rgb_to_pixel, PIXEL_BYTES};
+    use crate::encode::logic::scalar;
+    use crate::PIXEL_BYTES;
 
-    const NUM_PIXELS: usize = 8;
-
-    const RGB888_DATA: [u8; 3 * NUM_PIXELS] = [
-          0,   0,   0,
-        255,   0,   0,
-        0,   255,   0,
-        0,     0, 255,
-        100, 100, 100,
-        128, 128, 128,
-        200, 200, 200,
-        255, 255, 255,
-    ];
-
-    const RGB565_DATA: [u16; NUM_PIXELS] = [
-        rgb_to_pixel([  0,   0,   0]),
-        rgb_to_pixel([255,   0,   0]),
-        rgb_to_pixel([  0, 255,   0]),
-        rgb_to_pixel([  0,   0, 255]),
-        rgb_to_pixel([100, 100, 100]),
-        rgb_to_pixel([128, 128, 128]),
-        rgb_to_pixel([200, 200, 200]),
-        rgb_to_pixel([255, 255, 255]),
-    ];
-
-    const RGBA8888_DATA: [u8; 4 * NUM_PIXELS] = [
-          0,   0,   0,   0,
-        255,   0,   0, 255,
-        0,   255,   0,   0,
-        0,     0, 255, 255,
-        100, 100, 100, 100,
-        128, 128, 128, 128,
-        200, 200, 200, 200,
-        255, 255, 255, 255,
-    ];
+    use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
-    fn encode_rgb888_x86_64() {
+    fn encode_rgb888_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+        
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -305,7 +281,11 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgb565_x86_64() {
+    fn encode_rgb565_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -328,7 +308,11 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgba8888_x86_64() {
+    fn encode_rgba8888_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -348,7 +332,11 @@ mod tests {
     }
 
     #[test]
-    fn encode_endian_x86_64() {
+    fn encode_endian_x86_64_sse41() {
+        if !is_x86_feature_detected!("sse4.1") {
+            return;
+        }
+
         let mut a_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut b_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
