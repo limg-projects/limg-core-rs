@@ -48,50 +48,6 @@ pub fn encode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, spec
     Ok(size)
 }
 
-#[cfg(feature = "alloc")]
-#[inline]
-pub fn encode_to_vec(data: impl AsRef<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<alloc::vec::Vec<u8>> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
-
-    let vec = unsafe {
-        let size = encoded_size(spec);
-
-        // 未初期化バッファの確保
-        let mut buf = alloc::vec::Vec::with_capacity(size);
-        buf.set_len(size);
-
-        // バッファに書き込み
-        encode_image(data, &mut buf, spec, color_type);
-
-        buf
-    };
-    
-    Ok(vec)
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn encode_to_write(data: impl AsRef<[u8]>, writer: &mut impl std::io::Write, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
-
-    let buf = encode_to_vec(data, spec, color_type)?;
-    writer.write_all(&buf)?;
-    Ok(buf.len())
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn encode_to_file(data: impl AsRef<[u8]>, path: impl AsRef<std::path::Path>, spec: &ImageSpec, color_type: ColorType) -> Result<()> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
-
-    let mut file = std::fs::File::create(path)?;
-    encode_to_write(data.as_ref(), &mut file, spec, color_type)?;
-    Ok(())
-}
-
 #[inline(always)]
 fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Result<()> {
     if spec.is_zero_dimensions() {

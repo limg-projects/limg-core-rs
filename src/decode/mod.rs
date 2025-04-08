@@ -4,11 +4,6 @@ use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_T
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
-use ::core::slice::from_raw_parts_mut;
-use ::core::mem::MaybeUninit;
-
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
 
 use scalar::{
     decode_to_rgb888_be,   decode_to_rgb888_le,
@@ -41,95 +36,6 @@ pub fn decode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, colo
     unsafe { decode_image(data, buf, &spec, color_type); }
 
     Ok((spec, written_size))
-}
-
-#[cfg(feature = "alloc")]
-#[inline]
-pub fn decode_to_vec(data: impl AsRef<[u8]>, color_type: ColorType) -> Result<(ImageSpec, Vec<u8>)> {
-    let data = data.as_ref();
-
-    let header = from_data_header(data)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
-
-    let data = unsafe { data.get_unchecked(IMAGE_HEADER_SIZE..) };
-
-    if data.len() < num_pixels * PIXEL_BYTES {
-        return Err(Error::InputBufferTooSmall);
-    }
-
-    let vec = unsafe {
-        let size = num_pixels * color_type.bytes_per_pixel();
-
-        let mut buf = Vec::with_capacity(size);
-        buf.set_len(size);
-
-        decode_image(data, &mut buf, &spec, color_type);
-
-        buf
-    };
-
-    Ok((spec, vec))
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_read_to_buffer(read: &mut impl std::io::Read, buf: &mut impl AsMut<[u8]>, color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let header = read_header(read)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
-
-    let buf = buf.as_mut();
-    let written_size = num_pixels * color_type.bytes_per_pixel();
-
-    if buf.len() < written_size {
-        return Err(Error::OutputBufferTooSmall);
-    }
-
-    let mut data = Vec::with_capacity(num_pixels * PIXEL_BYTES);
-    read.read_exact(&mut data)?;
-
-    unsafe { decode_image(&data, buf, &spec, color_type); }
-
-    Ok((spec, written_size))
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_read_to_vec(read: &mut impl std::io::Read, color_type: ColorType) -> Result<(ImageSpec, Vec<u8>)> {
-    let header = read_header(read)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
-
-    let mut data = Vec::with_capacity(num_pixels * PIXEL_BYTES);
-    read.read_exact(&mut data)?;
-
-    let vec = unsafe {
-        let size = num_pixels * color_type.bytes_per_pixel();
-
-        let mut buf = Vec::with_capacity(size);
-        buf.set_len(size);
-
-        decode_image(&data, &mut buf, &spec, color_type);
-
-        buf
-    };
-
-    Ok((spec, vec))
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_file_to_buffer(path: impl AsRef<std::path::Path>, buf: &mut impl AsMut<[u8]>, color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let mut file = std::fs::File::open(path)?;
-    decode_from_read_to_buffer(&mut file, buf, color_type)
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_file_to_vec(path: impl AsRef<std::path::Path>, color_type: ColorType) -> Result<(ImageSpec, Vec<u8>)> {
-    let mut file = std::fs::File::open(path)?;
-    decode_from_read_to_vec(&mut file, color_type)
 }
 
 fn from_data_header(data: &[u8]) -> Result<ImageHeaderInternal> {
