@@ -144,15 +144,6 @@ fn from_data_header(data: &[u8]) -> Result<ImageHeaderInternal> {
 }
 
 #[inline(always)]
-fn read_header(read: &mut impl std::io::Read) -> Result<ImageHeaderInternal> {
-    let mut header = MaybeUninit::<ImageHeaderInternal>::uninit();
-    let header_buf = unsafe { from_raw_parts_mut(header.as_mut_ptr().cast::<u8>(), IMAGE_HEADER_SIZE) };
-    read.read_exact(header_buf)?;
-
-    unsafe { Ok(header.assume_init()) }
-}
-
-#[inline(always)]
 fn header_to_spec(header: &ImageHeaderInternal) -> Result<ImageSpec> {
     // シグネチャが一致しない場合はエラー
     // 幅か高さが0の場合もエラー

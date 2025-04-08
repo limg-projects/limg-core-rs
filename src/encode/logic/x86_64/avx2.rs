@@ -1,6 +1,6 @@
 use crate::pixel::{ColorType, PIXEL_BYTES};
-use core::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::encode::logic::scalar;
+use ::core::slice::{from_raw_parts, from_raw_parts_mut};
 
 const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit
 
