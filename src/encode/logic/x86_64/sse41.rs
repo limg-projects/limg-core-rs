@@ -94,6 +94,11 @@ macro_rules! encode_from_endian {
             const R_SHUFFLE_MASK_2: M128I8 = M128I8([-1, -1, -1, -1, 0, 3, 6, 9, -1, -1, -1, -1, -1, -1, -1, -1]);
             const G_SHUFFLE_MASK_2: M128I8 = M128I8([-1, -1, -1, -1, 1, 4, 7, 10, -1, -1, -1, -1, -1, -1, -1, -1]);
             const B_SHUFFLE_MASK_2: M128I8 = M128I8([-1, -1, -1, -1, 2, 5, 8, 11, -1, -1, -1, -1, -1, -1, -1, -1]);
+
+            // バッファオーバーしないための後ピクセルを加味する
+            if num_pixels < PIXEL_BLOCK_LEN + 2 {
+                return unsafe { scalar::$rgb888(data, buf, num_pixels) };
+            }
         
             let mut src_ptr = data.as_ptr();
             let mut dst_ptr = buf.as_mut_ptr();
