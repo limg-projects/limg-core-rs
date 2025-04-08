@@ -312,20 +312,6 @@ macro_rules! encode_from_endian {
 encode_from_endian!("big", _mm256_be_epi16, encode_from_rgb888_be, encode_from_rgb565_be, encode_from_rgba8888_be);
 encode_from_endian!("little", _mm256_le_epi16, encode_from_rgb888_le, encode_from_rgb565_le, encode_from_rgba8888_le);
 
-fn a() {
-    // _mm256_cvtepu8_epi16(_mm256_castsi256_si128(a))
-    // _mm256_permutevar8x32_epi32(a, b)
-}
-
-fn print256(txt: &str, value: __m256i) {
-    let value: M256I8 = unsafe { ::core::mem::transmute(value) };
-    print!("{}: 0x", txt);
-    for v in value.0 {
-        print!(" {:02X}", v);
-    }
-    println!("");
-}
-
 #[cfg(test)]
 mod tests {
     use crate::encode::logic::scalar;
@@ -347,14 +333,14 @@ mod tests {
             super::encode_from_rgb888_be(&RGB888_DATA, &mut sse41_buf, NUM_PIXELS);
         }
 
-        // assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, sse41_buf);
 
         unsafe {
             scalar::encode_from_rgb888_le(&RGB888_DATA, &mut scalar_buf, NUM_PIXELS);
             super::encode_from_rgb888_le(&RGB888_DATA, &mut sse41_buf, NUM_PIXELS);
         }
 
-        // assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, sse41_buf);
     }
 
     #[test]
@@ -408,53 +394,33 @@ mod tests {
         assert_eq!(scalar_buf, sse41_buf);
     }
 
-    // #[test]
-    // fn encode_endian_x86_64() {
-    //     let mut a_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-    //     let mut b_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+    #[test]
+    fn encode_endian_x86_64_avx2() {
+        if !is_x86_feature_detected!("avx2") {
+            return;
+        }
 
-    //     let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
-    //     let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
+        let mut a_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut b_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
-    //     unsafe {
-    //         super::encode_from_rgb888_be(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+        let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
+        let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
-    //         super::encode_from_rgb565_be(data, &mut b_buf, NUM_PIXELS);
-    //         assert_eq!(a_buf, b_buf);
-    //         super::encode_from_rgba8888_be(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
-    //         assert_eq!(a_buf, b_buf);
+        unsafe {
+            super::encode_from_rgb888_be(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+
+            super::encode_from_rgb565_be(data, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+            super::encode_from_rgba8888_be(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
 
             
-    //         super::encode_from_rgb888_le(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+            super::encode_from_rgb888_le(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
 
-    //         super::encode_from_rgb565_le(data, &mut b_buf, NUM_PIXELS);
-    //         assert_eq!(a_buf, b_buf);
-    //         super::encode_from_rgba8888_le(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
-    //         assert_eq!(a_buf, b_buf);
-    //     }
-    // }
-
-    #[test]
-    fn time_check() {
-        println!("avx2 : {}", is_x86_feature_detected!("avx2"));
-
-        let data = std::fs::read("pixel_image.raw").unwrap();
-        let num_pixels = data.len() / 2;
-        let mut scalar_buf = vec![0; data.len() * 2];
-        let mut simd_buf = vec![0; data.len() * 2];
-
-        let mut now = std::time::Instant::now();
-
-        unsafe { scalar::encode_from_rgb565_be(&data, &mut scalar_buf, num_pixels) };
-
-        println!("scalar time: {:?}", now.elapsed());
-
-        now = std::time::Instant::now();
-
-        unsafe { super::encode_from_rgb565_be(&data, &mut simd_buf, num_pixels) };
-
-        println!("simd time: {:?}", now.elapsed());
-
-        println!("is equal: {}", scalar_buf == simd_buf);
+            super::encode_from_rgb565_le(data, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+            super::encode_from_rgba8888_le(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+        }
     }
 }
