@@ -1,11 +1,11 @@
-mod scalar;
+mod logic;
 
 use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
-use scalar::{
+use logic::{
     decode_to_rgb888_be,   decode_to_rgb888_le,
     decode_to_rgb565_be,   decode_to_rgb565_le,
     decode_to_rgba8888_be, decode_to_rgba8888_le,
