@@ -8,7 +8,7 @@ use crate::common::logic::x86_64::M128I;
 const PIXEL_BLOCK_LEN: usize = 8; // u16(16 bit) * 8 = 128 bit
 
 #[inline]
-#[target_feature(enable = "sse4.1")]
+#[target_feature(enable = "ssse3")]
 pub unsafe fn encode_from_rgb565_swap(data: &[u8], buf: &mut [u8], num_pixels: usize) {
     let mut src_ptr = data.as_ptr();
     let mut dst_ptr = buf.as_mut_ptr();
@@ -36,7 +36,7 @@ macro_rules! encode_from_endian {
         // -- rgb888 ------------------------------
 
         #[inline]
-        #[target_feature(enable = "sse4.1")]
+        #[target_feature(enable = "ssse3")]
         pub unsafe fn $rgb888(data: &[u8], buf: &mut [u8], num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
         
@@ -102,7 +102,7 @@ macro_rules! encode_from_endian {
         }
         
         #[inline]
-        #[target_feature(enable = "sse4.1")]
+        #[target_feature(enable = "ssse3")]
         #[cfg(not(target_endian = $endian))]
         pub unsafe fn $rgb565(data: &[u8], buf: &mut [u8], num_pixels: usize) {
             unsafe { encode_from_rgb565_swap(data, buf, num_pixels) }
@@ -111,7 +111,7 @@ macro_rules! encode_from_endian {
         // -- rgba8888 ----------------------------
 
         #[inline]
-        #[target_feature(enable = "sse4.1")]
+        #[target_feature(enable = "ssse3")]
         pub unsafe fn $rgba8888(data: &[u8], buf: &mut [u8], num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
         
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn encode_rgb888_x86_64_sse41() {
-        if !is_x86_feature_detected!("sse4.1") {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
         
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn encode_rgb565_x86_64_sse41() {
-        if !is_x86_feature_detected!("sse4.1") {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
@@ -228,7 +228,7 @@ mod tests {
 
     #[test]
     fn encode_rgba8888_x86_64_sse41() {
-        if !is_x86_feature_detected!("sse4.1") {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
@@ -252,7 +252,7 @@ mod tests {
 
     #[test]
     fn encode_endian_x86_64_sse41() {
-        if !is_x86_feature_detected!("sse4.1") {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
