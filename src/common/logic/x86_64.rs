@@ -81,6 +81,13 @@ impl M128I {
     }
 }
 
+impl ::core::fmt::Debug for M128I {
+    #[inline(always)]
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl ::core::ops::BitAnd for M128I {
     type Output = Self;
 
