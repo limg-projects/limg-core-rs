@@ -16,9 +16,9 @@ pub unsafe fn encode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels:
     let remainder = num_pixels % PIXEL_BLOCK_LEN;
 
     for _ in 0..pixel_blocks {
-        let src = M128I::loadu_si128(data.cast::<M128I>()).swap_epi16();
+        let pixel = M128I::loadu_si128(data.cast::<M128I>()).swap_epi16();
 
-        src.storeu_si128(buf.cast::<M128I>());
+        pixel.storeu_si128(buf.cast::<M128I>());
         
         data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
         buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
