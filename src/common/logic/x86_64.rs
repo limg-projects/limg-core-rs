@@ -1,5 +1,4 @@
 #![allow(unsafe_op_in_unsafe_fn)]
-#![allow(dead_code)]
 
 #[cfg(target_arch = "x86")]
 use ::core::arch::x86::*;
@@ -152,6 +151,12 @@ impl M256I {
     #[target_feature(enable = "avx2")]
     pub unsafe fn shuffle_epi8(self, a: M256I) -> M256I {
         M256I(_mm256_shuffle_epi8(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
+    pub unsafe fn permute4x64_epi64<const IMM8: i32>(self) -> M256I {
+        M256I(_mm256_permute4x64_epi64::<IMM8>(self.0))
     }
 
     // ---- 追加関数 ----
