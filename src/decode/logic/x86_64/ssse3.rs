@@ -28,10 +28,7 @@ unsafe fn get_rgb_vec(pixel: M128I) -> (M128I, M128I, M128I) {
 
 #[inline]
 #[target_feature(enable = "ssse3")]
-pub unsafe fn decode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels: usize) {
-    let mut data = data;
-    let mut buf = buf;
-
+pub unsafe fn decode_from_rgb565_swap(mut data: *const u8, mut buf: *mut u8, num_pixels: usize) {
     let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
     let remainder = num_pixels % PIXEL_BLOCK_LEN;
 
@@ -52,55 +49,45 @@ macro_rules! decode_from_endian {
         // -- rgb888 ------------------------------
 
         #[inline]
-        #[target_feature(enable = "sse4.1")]
-        pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
+        #[target_feature(enable = "ssse3")]
+        pub unsafe fn $rgb888(mut data: *const u8, mut buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
 
-            const R_MASK_1: M128I = unsafe {
-                M128I::const_i8::< 0, -1, -1,  2, -1, -1,  4, -1, -1,  6, -1, -1, -1, -1, -1, -1>()
-            };
-            const G_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1,  0, -1, -1,  2, -1, -1,  4, -1, -1,  6, -1, -1, -1, -1, -1>()
-            };
-            const B_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1, -1,  0, -1, -1,  2, -1, -1,  4, -1, -1,  6, -1, -1, -1, -1>()
+            const RGB_MASK: M128I = unsafe {
+                M128I::const_i8::<0, -1, -1, 2, -1, -1, 4, -1, -1, 6, -1, -1, -1, -1, -1, -1>()
             };
         
-            const R_MASK_2: M128I = unsafe {
-                M128I::const_i8::< 8, -1, -1, 10, -1, -1, 12, -1, -1, 14, -1, -1, -1, -1, -1, -1>()
-            };
-            const G_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1,  8, -1, -1, 10, -1, -1, 12, -1, -1, 14, -1, -1, -1, -1, -1>()
-            };
-            const B_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1, -1,  8, -1, -1, 10, -1, -1, 12, -1, -1, 14, -1, -1, -1, -1>()
-            };
-
             // バッファオーバーしないための後ピクセルを加味する
             if num_pixels < PIXEL_BLOCK_LEN + 2 {
                 return scalar::$rgb888(data, buf, num_pixels);
             }
-        
-            let mut data = data;
-            let mut buf = buf;
             
             let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
             let remainder = num_pixels % PIXEL_BLOCK_LEN;
         
             for _ in 0..pixel_blocks {
-                // 8ピクセル取得
+                // 8ピクセル読み込み
                 let pixel = M128I::loadu_si128(data.cast::<M128I>()).$endian_fn();
         
                 // マスクで色を分離
                 let (r_vec, g_vec, b_vec) = get_rgb_vec(pixel);
         
-                // rgbに合成
-                let rgb_1 = r_vec.shuffle_epi8(R_MASK_1) | g_vec.shuffle_epi8(G_MASK_1) | b_vec.shuffle_epi8(B_MASK_1);
-                let rgb_2 = r_vec.shuffle_epi8(R_MASK_2) | g_vec.shuffle_epi8(G_MASK_2) | b_vec.shuffle_epi8(B_MASK_2);
+                // rgbに合成（前半4ピクセル）
+                let mut rgb = r_vec.shuffle_epi8(RGB_MASK) |
+                    g_vec.shuffle_epi8(RGB_MASK).slli_si128::<1>() |
+                    b_vec.shuffle_epi8(RGB_MASK).slli_si128::<2>();
         
-                rgb_1.storeu_si128(buf.cast::<M128I>());
+                // 4ピクセル書き込み
+                rgb.storeu_si128(buf.cast::<M128I>());
                 buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
-                rgb_2.storeu_si128(buf.cast::<M128I>());
+        
+                // rgbに合成（後半4ピクセル）
+                rgb = r_vec.srli_si128::<8>().shuffle_epi8(RGB_MASK) |
+                    g_vec.srli_si128::<8>().shuffle_epi8(RGB_MASK).slli_si128::<1>() |
+                    b_vec.srli_si128::<8>().shuffle_epi8(RGB_MASK).slli_si128::<2>();
+        
+                // 4ピクセル書き込み
+                rgb.storeu_si128(buf.cast::<M128I>());
         
                 data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
                 buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
@@ -128,35 +115,16 @@ macro_rules! decode_from_endian {
 
         #[inline]
         #[target_feature(enable = "ssse3")]
-        pub unsafe fn $rgba8888(data: *const u8, buf: *mut u8, num_pixels: usize) {
+        pub unsafe fn $rgba8888(mut data: *const u8, mut buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
 
-            const R_MASK_1: M128I = unsafe {
-                M128I::const_i8::< 0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6, -1, -1, -1>()
-            };
-            const G_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1,  0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6, -1, -1>()
-            };
-            const B_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1, -1,  0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6, -1>()
-            };
-        
-            const R_MASK_2: M128I = unsafe {
-                M128I::const_i8::< 8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14, -1, -1, -1>()
-            };
-            const G_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1,  8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14, -1, -1>()
-            };
-            const B_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1, -1,  8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14, -1>()
+            const RGB_MASK: M128I = unsafe {
+                M128I::const_i8::<0, -1, -1, -1, 2, -1, -1, -1, 4, -1, -1, -1, 6, -1, -1, -1>()
             };
         
             const ALPHA_VEC: M128I = unsafe {
                 M128I::const_u8::<0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255>()
             };
-
-            let mut data = data;
-            let mut buf = buf;
 
             let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
             let remainder = num_pixels % PIXEL_BLOCK_LEN;
@@ -168,13 +136,24 @@ macro_rules! decode_from_endian {
                 // マスクで色を分離
                 let (r_vec, g_vec, b_vec) = get_rgb_vec(pixel);
 
-                // rgbに合成
-                let rgb_1 = r_vec.shuffle_epi8(R_MASK_1) | g_vec.shuffle_epi8(G_MASK_1) | b_vec.shuffle_epi8(B_MASK_1) | ALPHA_VEC;
-                let rgb_2 = r_vec.shuffle_epi8(R_MASK_2) | g_vec.shuffle_epi8(G_MASK_2) | b_vec.shuffle_epi8(B_MASK_2) | ALPHA_VEC;
-        
-                rgb_1.storeu_si128(buf.cast::<M128I>());
-                buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
-                rgb_2.storeu_si128(buf.cast::<M128I>());
+                // rgbに合成（前半4ピクセル）
+                let mut rgb = r_vec.shuffle_epi8(RGB_MASK) |
+                    g_vec.shuffle_epi8(RGB_MASK).slli_si128::<1>() |
+                    b_vec.shuffle_epi8(RGB_MASK).slli_si128::<2>() |
+                    ALPHA_VEC;
+                
+                // 4ピクセル書き込み
+                rgb.storeu_si128(buf.cast::<M128I>());
+                buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());    
+
+                // rgbに合成（後半4ピクセル）
+                rgb = r_vec.srli_si128::<8>().shuffle_epi8(RGB_MASK) |
+                    g_vec.srli_si128::<8>().shuffle_epi8(RGB_MASK).slli_si128::<1>() |
+                    b_vec.srli_si128::<8>().shuffle_epi8(RGB_MASK).slli_si128::<2>() |
+                    ALPHA_VEC;
+
+                // 4ピクセル書き込み
+                rgb.storeu_si128(buf.cast::<M128I>());
         
                 data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
                 buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
@@ -187,37 +166,12 @@ macro_rules! decode_from_endian {
 
         #[inline]
         #[target_feature(enable = "ssse3")]
-        pub unsafe fn $rgba8888_aplha(data: *const u8, buf: *mut u8, transparent_color: u16, num_pixels: usize) {
+        pub unsafe fn $rgba8888_aplha(mut data: *const u8, mut buf: *mut u8, transparent_color: u16, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
 
-            const R_MASK_1: M128I = unsafe {
-                M128I::const_i8::< 0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6, -1, -1, -1>()
+            const RGBA_MASK: M128I = unsafe {
+                M128I::const_i8::<0, -1, -1, -1, 2, -1, -1, -1, 4, -1, -1, -1, 6, -1, -1, -1>()
             };
-            const G_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1,  0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6, -1, -1>()
-            };
-            const B_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1, -1,  0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6, -1>()
-            };
-            const A_MASK_1: M128I = unsafe {
-                M128I::const_i8::<-1, -1, -1,  0, -1, -1, -1,  2, -1, -1, -1,  4, -1, -1, -1,  6>()
-            };
-        
-            const R_MASK_2: M128I = unsafe {
-                M128I::const_i8::< 8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14, -1, -1, -1>()
-            };
-            const G_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1,  8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14, -1, -1>()
-            };
-            const B_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1, -1,  8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14, -1>()
-            };
-            const A_MASK_2: M128I = unsafe {
-                M128I::const_i8::<-1, -1, -1,  8, -1, -1, -1, 10, -1, -1, -1, 12, -1, -1, -1, 14>()
-            };
-
-            let mut data = data;
-            let mut buf = buf;
             
             let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
             let remainder = num_pixels % PIXEL_BLOCK_LEN;
@@ -233,15 +187,26 @@ macro_rules! decode_from_endian {
         
                 // マスクで色を分離
                 let (r_vec, g_vec, b_vec) = get_rgb_vec(pixel);
-        
-                // rgbaに合成
-                let rgb_1 = r_vec.shuffle_epi8(R_MASK_1) | g_vec.shuffle_epi8(G_MASK_1) | b_vec.shuffle_epi8(B_MASK_1) | a_vec.shuffle_epi8(A_MASK_1);
-                let rgb_2 = r_vec.shuffle_epi8(R_MASK_2) | g_vec.shuffle_epi8(G_MASK_2) | b_vec.shuffle_epi8(B_MASK_2) | a_vec.shuffle_epi8(A_MASK_2);
-        
-                rgb_1.storeu_si128(buf.cast::<M128I>());
-                buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
-                rgb_2.storeu_si128(buf.cast::<M128I>());
-        
+
+                // rgbに合成（前半4ピクセル）
+                let mut rgb = r_vec.shuffle_epi8(RGBA_MASK) |
+                    g_vec.shuffle_epi8(RGBA_MASK).slli_si128::<1>() |
+                    b_vec.shuffle_epi8(RGBA_MASK).slli_si128::<2>() |
+                    a_vec.shuffle_epi8(RGBA_MASK).slli_si128::<3>();
+
+                // 4ピクセル書き込み
+                rgb.storeu_si128(buf.cast::<M128I>());
+                buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());    
+
+                // rgbに合成（後半4ピクセル）
+                rgb = r_vec.srli_si128::<8>().shuffle_epi8(RGBA_MASK) |
+                    g_vec.srli_si128::<8>().shuffle_epi8(RGBA_MASK).slli_si128::<1>() |
+                    b_vec.srli_si128::<8>().shuffle_epi8(RGBA_MASK).slli_si128::<2>() |
+                    a_vec.srli_si128::<8>().shuffle_epi8(RGBA_MASK).slli_si128::<3>();
+
+                // 4ピクセル書き込み
+                rgb.storeu_si128(buf.cast::<M128I>());
+
                 data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
                 buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
             }
@@ -274,7 +239,7 @@ mod tests {
     use crate::decode::logic::scalar;
     use crate::pixel::PIXEL_BYTES;
 
-    use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA};
+    use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA_BE, RGB565_DATA_LE};
 
     #[test]
     fn decode_rgb888_x86_64_ssse3() {
@@ -286,15 +251,15 @@ mod tests {
         let mut simd_buf = [0; NUM_PIXELS * 3];
 
         unsafe {
-            scalar::decode_to_rgb888_be(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb888_be(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgb888_le(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb888_le(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
@@ -310,15 +275,15 @@ mod tests {
         let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
-            scalar::decode_to_rgb565_be(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb565_be(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb565_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb565_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgb565_le(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb565_le(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb565_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb565_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
@@ -334,15 +299,15 @@ mod tests {
         let mut simd_buf = [0; NUM_PIXELS * 4];
 
         unsafe {
-            scalar::decode_to_rgba8888_be(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgba8888_be(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgba8888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgba8888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgba8888_le(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgba8888_le(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgba8888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgba8888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
@@ -360,15 +325,15 @@ mod tests {
         let transparent_color = crate::rgb_to_pixel([255, 255, 255]);
 
         unsafe {
-            scalar::decode_to_rgba8888_alpha_be(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
-            super::decode_to_rgba8888_alpha_be(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            scalar::decode_to_rgba8888_alpha_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            super::decode_to_rgba8888_alpha_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgba8888_alpha_le(RGB565_DATA.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
-            super::decode_to_rgba8888_alpha_le(RGB565_DATA.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            scalar::decode_to_rgba8888_alpha_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            super::decode_to_rgba8888_alpha_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);

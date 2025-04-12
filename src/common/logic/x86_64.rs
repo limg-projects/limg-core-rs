@@ -33,6 +33,12 @@ impl M128I {
 
     #[inline]
     #[target_feature(enable = "sse2")]
+    pub unsafe fn slli_si128<const IMM8: i32>(self) -> M128I {
+        M128I(_mm_slli_si128::<IMM8>(self.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "sse2")]
     pub unsafe fn slli_epi16<const IMM8: i32>(self) -> M128I {
         M128I(_mm_slli_epi16::<IMM8>(self.0))
     }
@@ -221,6 +227,11 @@ impl M256I {
             E16, E17, E18, E19, E20, E21, E22, E23,
             E24, E25, E26, E27, E28, E29, E30, E31
         ]))
+    }
+
+    #[inline(always)]
+    pub const unsafe fn const1_u16<const A: u16>() -> M256I {
+        M256I(transmute([A; 16]))
     }
 
     #[inline]
