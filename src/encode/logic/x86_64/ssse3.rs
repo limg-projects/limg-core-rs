@@ -36,13 +36,13 @@ macro_rules! encode_from_endian {
         pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
         
-            const R_MASK_1: M128I = unsafe { M128I::new_i8(0, -1, 3, -1, 6, -1,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const G_MASK_1: M128I = unsafe { M128I::new_i8(1, -1, 4, -1, 7, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const B_MASK_1: M128I = unsafe { M128I::new_i8(2, -1, 5, -1, 8, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const R_MASK_1: M128I = unsafe { M128I::const_i8::<0, -1, 3, -1, 6, -1,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const G_MASK_1: M128I = unsafe { M128I::const_i8::<1, -1, 4, -1, 7, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const B_MASK_1: M128I = unsafe { M128I::const_i8::<2, -1, 5, -1, 8, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
         
-            const R_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 3, -1, 6, -1,  9, -1) };
-            const G_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 4, -1, 7, -1, 10, -1) };
-            const B_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 5, -1, 8, -1, 11, -1) };
+            const R_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 3, -1, 6, -1,  9, -1>() };
+            const G_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 4, -1, 7, -1, 10, -1>() };
+            const B_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 5, -1, 8, -1, 11, -1>() };
 
             // バッファオーバーしないための後ピクセルを加味する
             if num_pixels < PIXEL_BLOCK_LEN + 2 {
@@ -106,13 +106,13 @@ macro_rules! encode_from_endian {
         pub unsafe fn $rgba8888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
         
-            const R_MASK_1: M128I = unsafe { M128I::new_i8(0, -1, 4, -1, 8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const G_MASK_1: M128I = unsafe { M128I::new_i8(1, -1, 5, -1, 9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const B_MASK_1: M128I = unsafe { M128I::new_i8(2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const R_MASK_1: M128I = unsafe { M128I::const_i8::<0, -1, 4, -1,  8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const G_MASK_1: M128I = unsafe { M128I::const_i8::<1, -1, 5, -1,  9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const B_MASK_1: M128I = unsafe { M128I::const_i8::<2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
         
-            const R_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1, 8, -1, 12, -1) };
-            const G_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1, 9, -1, 13, -1) };
-            const B_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1) };
+            const R_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1,  8, -1, 12, -1>() };
+            const G_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1,  9, -1, 13, -1>() };
+            const B_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1>() };
         
             let mut data = data;
             let mut buf = buf;

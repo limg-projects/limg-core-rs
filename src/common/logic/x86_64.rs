@@ -1,4 +1,5 @@
 #![allow(unsafe_op_in_unsafe_fn)]
+#![allow(dead_code)]
 
 #[cfg(target_arch = "x86")]
 use ::core::arch::x86::*;
@@ -57,14 +58,22 @@ impl M128I {
     // ---- 追加関数 ----
 
     #[inline(always)]
-    pub const unsafe fn new_i8(e15: i8, e14: i8, e13: i8, e12: i8, e11: i8, e10: i8, e9: i8, e8: i8, e7: i8, e6: i8, e5: i8, e4: i8, e3: i8, e2: i8, e1: i8, e0: i8) -> M128I {
-        M128I(transmute([e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0]))
+    pub const unsafe fn const_i8<
+        const E00: i8, const E01: i8, const E02: i8, const E03: i8, const E04: i8, const E05: i8, const E06: i8, const E07: i8,
+        const E08: i8, const E09: i8, const E10: i8, const E11: i8, const E12: i8, const E13: i8, const E14: i8, const E15: i8,
+    >() -> M128I {
+        M128I(transmute([E00, E01, E02, E03, E04, E05, E06, E07, E08, E09, E10, E11, E12, E13, E14, E15]))
+    }
+
+    #[inline(always)]
+    pub const unsafe fn const1_u16<const A: u16>() -> M128I {
+        M128I(transmute([A; 8]))
     }
 
     #[inline]
     #[target_feature(enable = "ssse3")]
     pub unsafe fn swap_epi16(self) -> M128I {
-        const MASK: M128I = unsafe { M128I::new_i8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14) };
+        const MASK: M128I = unsafe { M128I::const_i8::<1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14>() };
         self.shuffle_epi8(MASK)
     }
 
