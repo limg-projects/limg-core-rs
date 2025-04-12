@@ -27,8 +27,20 @@ impl M128I {
 
     #[inline]
     #[target_feature(enable = "sse2")]
+    pub unsafe fn set1_epi16(a: i16) -> M128I {
+        M128I(_mm_set1_epi16(a))
+    }
+
+    #[inline]
+    #[target_feature(enable = "sse2")]
     pub unsafe fn slli_epi16<const IMM8: i32>(self) -> M128I {
         M128I(_mm_slli_epi16::<IMM8>(self.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "sse2")]
+    pub unsafe fn srli_si128<const IMM8: i32>(self) -> M128I {
+        M128I(_mm_srli_si128::<IMM8>(self.0))
     }
 
     #[inline]
@@ -47,6 +59,18 @@ impl M128I {
     #[target_feature(enable = "sse2")]
     pub unsafe fn or_si128(self, a: M128I) -> M128I {
         M128I(_mm_or_si128(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "sse2")]
+    pub unsafe fn xor_si128(self, a: M128I) -> M128I {
+        M128I(_mm_xor_si128(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "sse2")]
+    pub unsafe fn cmpeq_epi16(self, a: M128I) -> M128I {
+        M128I(_mm_cmpeq_epi16(self.0, a.0))
     }
 
     #[inline]
