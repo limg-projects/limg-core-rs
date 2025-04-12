@@ -47,7 +47,7 @@ pub unsafe fn decode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels:
     scalar::decode_from_rgb565_swap(data, buf, remainder)
 }
 
-macro_rules! encode_from_endian {
+macro_rules! decode_from_endian {
     ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident, $rgba8888_aplha: ident) => {
         // -- rgb888 ------------------------------
 
@@ -251,7 +251,7 @@ macro_rules! encode_from_endian {
     };
 }
 
-encode_from_endian!(
+decode_from_endian!(
     "big",
     be_epi16,
     decode_to_rgb888_be,
@@ -260,7 +260,7 @@ encode_from_endian!(
     decode_to_rgba8888_alpha_be
 );
 
-encode_from_endian!(
+decode_from_endian!(
     "little",
     le_epi16,
     decode_to_rgb888_le,
@@ -277,7 +277,7 @@ mod tests {
     use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA};
 
     #[test]
-    fn encode_rgb888_x86_64_ssse3() {
+    fn decode_rgb888_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
@@ -301,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgb565_x86_64_ssse3() {
+    fn decode_rgb565_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
