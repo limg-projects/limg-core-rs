@@ -234,21 +234,21 @@ mod tests {
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
             scalar::encode_from_rgb888_be(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgb888_le(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
@@ -258,24 +258,24 @@ mod tests {
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
         let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
         unsafe {
             scalar::encode_from_rgb565_be(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb565_be(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_be(data.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgb565_le(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb565_le(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_le(data.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
@@ -285,21 +285,21 @@ mod tests {
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
             scalar::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]

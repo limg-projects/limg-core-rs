@@ -162,82 +162,82 @@ mod tests {
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
-    fn encode_rgb888_x86_64_sse41() {
+    fn encode_rgb888_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
         
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
             scalar::encode_from_rgb888_be(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgb888_le(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
-    fn encode_rgb565_x86_64_sse41() {
+    fn encode_rgb565_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
         let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
         unsafe {
             scalar::encode_from_rgb565_be(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb565_be(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_be(data.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgb565_le(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb565_le(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_le(data.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
-    fn encode_rgba8888_x86_64_sse41() {
+    fn encode_rgba8888_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
             scalar::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
-    fn encode_endian_x86_64_sse41() {
+    fn encode_endian_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
