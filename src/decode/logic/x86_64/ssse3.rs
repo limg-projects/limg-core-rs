@@ -45,7 +45,7 @@ pub unsafe fn decode_from_rgb565_swap(mut data: *const u8, mut buf: *mut u8, num
 }
 
 macro_rules! decode_from_endian {
-    ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident, $rgba8888_aplha: ident) => {
+    ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident, $rgba8888_alpha: ident) => {
         // -- rgb888 ------------------------------
 
         #[inline]
@@ -166,7 +166,7 @@ macro_rules! decode_from_endian {
 
         #[inline]
         #[target_feature(enable = "ssse3")]
-        pub unsafe fn $rgba8888_aplha(mut data: *const u8, mut buf: *mut u8, transparent_color: u16, num_pixels: usize) {
+        pub unsafe fn $rgba8888_alpha(mut data: *const u8, mut buf: *mut u8, transparent_color: u16, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
 
             const RGBA_MASK: M128I = unsafe {
@@ -211,7 +211,7 @@ macro_rules! decode_from_endian {
                 buf = buf.add(4 * COLOR_TYPE.bytes_per_pixel());
             }
             
-            scalar::$rgba8888_aplha(data, buf, transparent_color, remainder)
+            scalar::$rgba8888_alpha(data, buf, transparent_color, remainder)
         }
     };
 }

@@ -177,9 +177,27 @@ impl M256I {
     }
 
     #[inline]
+    #[target_feature(enable = "avx")]
+    pub unsafe fn set1_epi16(a: i16) -> M256I {
+        M256I(_mm256_set1_epi16(a))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
+    pub unsafe fn slli_si256<const IMM8: i32>(self) -> M256I {
+        M256I(_mm256_slli_si256::<IMM8>(self.0))
+    }
+
+    #[inline]
     #[target_feature(enable = "avx2")]
     pub unsafe fn slli_epi16<const IMM8: i32>(self) -> M256I {
         M256I(_mm256_slli_epi16::<IMM8>(self.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
+    pub unsafe fn srli_si256<const IMM8: i32>(self) -> M256I {
+        M256I(_mm256_srli_si256::<IMM8>(self.0))
     }
 
     #[inline]
@@ -202,8 +220,26 @@ impl M256I {
 
     #[inline]
     #[target_feature(enable = "avx2")]
+    pub unsafe fn xor_si256(self, a: M256I) -> M256I {
+        M256I(_mm256_xor_si256(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
+    pub unsafe fn cmpeq_epi16(self, a: M256I) -> M256I {
+        M256I(_mm256_cmpeq_epi16(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
     pub unsafe fn shuffle_epi8(self, a: M256I) -> M256I {
         M256I(_mm256_shuffle_epi8(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
+    pub unsafe fn permute2x128_si256<const IMM8: i32>(self, a: M256I) -> M256I {
+        M256I(_mm256_permute2x128_si256::<IMM8>(self.0, a.0))
     }
 
     #[inline]
@@ -232,6 +268,12 @@ impl M256I {
     #[inline(always)]
     pub const unsafe fn const1_u16<const A: u16>() -> M256I {
         M256I(transmute([A; 16]))
+    }
+
+    #[inline]
+    #[target_feature(enable = "ssse3")]
+    pub unsafe fn not_si256(self) -> M256I {
+        self.xor_si256(self.cmpeq_epi16(self))
     }
 
     #[inline]
