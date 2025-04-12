@@ -66,8 +66,22 @@ impl M128I {
     }
 
     #[inline(always)]
+    pub const unsafe fn const_u8<
+        const E00: u8, const E01: u8, const E02: u8, const E03: u8, const E04: u8, const E05: u8, const E06: u8, const E07: u8,
+        const E08: u8, const E09: u8, const E10: u8, const E11: u8, const E12: u8, const E13: u8, const E14: u8, const E15: u8,
+    >() -> M128I {
+        M128I(transmute([E00, E01, E02, E03, E04, E05, E06, E07, E08, E09, E10, E11, E12, E13, E14, E15]))
+    }
+
+    #[inline(always)]
     pub const unsafe fn const1_u16<const A: u16>() -> M128I {
         M128I(transmute([A; 8]))
+    }
+
+    #[inline]
+    #[target_feature(enable = "ssse3")]
+    pub unsafe fn not_si128(self) -> M128I {
+        self.xor_si128(self.cmpeq_epi16(self))
     }
 
     #[inline]
