@@ -109,6 +109,9 @@ pub fn encode_data(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: 
 }
 
 pub unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> usize {
+    let data = data.as_ptr();
+    let buf = buf.as_mut_ptr();
+
     unsafe {
         match data_endian {
             DataEndian::Big => {

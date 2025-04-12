@@ -2,31 +2,27 @@
 
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::encode::logic::scalar;
-use ::core::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::common::logic::x86_64::M256I;
 
 const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit
 
 #[inline]
 #[target_feature(enable = "avx2")]
-pub unsafe fn encode_from_rgb565_swap(data: &[u8], buf: &mut [u8], num_pixels: usize) {
-    let mut src_ptr = data.as_ptr();
-    let mut dst_ptr = buf.as_mut_ptr();
+pub unsafe fn encode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels: usize) {
+    let mut data = data;
+    let mut buf = buf;
     
     let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
     let remainder = num_pixels % PIXEL_BLOCK_LEN;
 
     for _ in 0..pixel_blocks {
-        let src = M256I::loadu_si256(src_ptr.cast::<M256I>()).swap_epi16();
+        let pixel = M256I::loadu_si256(data.cast::<M256I>()).swap_epi16();
 
-        src.storeu_si256(dst_ptr.cast::<M256I>());
+        pixel.storeu_si256(buf.cast::<M256I>());
         
-        src_ptr = src_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
-        dst_ptr = dst_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
+        data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
+        buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
     }
-
-    let data = from_raw_parts(src_ptr, remainder * PIXEL_BYTES);
-    let buf = from_raw_parts_mut(dst_ptr, remainder * PIXEL_BYTES);
 
     scalar::encode_from_rgb565_swap(data, buf, remainder)
 }
@@ -38,7 +34,7 @@ macro_rules! encode_from_endian {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        pub unsafe fn $rgb888(data: &[u8], buf: &mut [u8], num_pixels: usize) {
+        pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
 
             const R_MASK_1: M256I = unsafe { M256I::const_i8::<
@@ -83,9 +79,9 @@ macro_rules! encode_from_endian {
             let num_pixels = num_pixels - 2;
 
             // 後半処理のため2バイトずらす
-            let mut src_ptr = data.as_ptr().add(2);
+            let mut data = data.add(2);
             // 2ピクセル部分進めておく
-            let mut dst_ptr = buf.as_mut_ptr().add(PIXEL_BYTES * 2);
+            let mut buf = buf.add(PIXEL_BYTES * 2);
 
             
             let pixel_blocks = (num_pixels - 2) / PIXEL_BLOCK_LEN;
@@ -93,10 +89,10 @@ macro_rules! encode_from_endian {
         
             for _ in 0..pixel_blocks {
                 // 前半8ピクセル取得
-                let rgb_1 = M256I::loadu_si256(src_ptr.cast::<M256I>());
-                src_ptr = src_ptr.add(8 * COLOR_TYPE.bytes_per_pixel() ); 
+                let rgb_1 = M256I::loadu_si256(data.cast::<M256I>());
+                data = data.add(8 * COLOR_TYPE.bytes_per_pixel() ); 
                 // 後半8ピクセル取得
-                let rgb_2 = M256I::loadu_si256(src_ptr.cast::<M256I>());
+                let rgb_2 = M256I::loadu_si256(data.cast::<M256I>());
 
                 // RGBに分離
                 let mut r_pixel = rgb_1.shuffle_epi8(R_MASK_1) | rgb_2.shuffle_epi8(R_MASK_2);
@@ -116,30 +112,27 @@ macro_rules! encode_from_endian {
                 // ピクセルに合成
                 let pixel = (r_pixel | g_pixel | b_pixel).$endian_fn();
     
-                pixel.storeu_si256(dst_ptr.cast::<M256I>());
+                pixel.storeu_si256(buf.cast::<M256I>());
                 
-                src_ptr = src_ptr.add(8 * COLOR_TYPE.bytes_per_pixel());
-                dst_ptr = dst_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
+                data = data.add(8 * COLOR_TYPE.bytes_per_pixel());
+                buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
             }
         
-            let data = from_raw_parts(src_ptr.add(4), remainder * COLOR_TYPE.bytes_per_pixel());
-            let buf = from_raw_parts_mut(dst_ptr, remainder * PIXEL_BYTES);
-        
-            scalar::$rgb888(data, buf, remainder)
+            scalar::$rgb888(data.add(4), buf, remainder)
         }
 
         // -- rgb565 ------------------------------
 
         #[inline(always)]
         #[cfg(target_endian = $endian)]
-        pub unsafe fn $rgb565(data: &[u8], buf: &mut [u8], num_pixels: usize) {
+        pub unsafe fn $rgb565(data: *const u8, buf: *mut u8, num_pixels: usize) {
             scalar::encode_from_rgb565_direct(data, buf, num_pixels)
         }
         
         #[inline]
         #[target_feature(enable = "avx2")]
         #[cfg(not(target_endian = $endian))]
-        pub unsafe fn $rgb565(data: &[u8], buf: &mut [u8], num_pixels: usize) {
+        pub unsafe fn $rgb565(data: *const u8, buf: *mut u8, num_pixels: usize) {
             encode_from_rgb565_swap(data, buf, num_pixels)
         }
 
@@ -147,7 +140,7 @@ macro_rules! encode_from_endian {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        pub unsafe fn $rgba8888(data: &[u8], buf: &mut [u8], num_pixels: usize) {
+        pub unsafe fn $rgba8888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
 
             const R_MASK_1: M256I = unsafe { M256I::const_i8::<
@@ -182,18 +175,18 @@ macro_rules! encode_from_endian {
 
             const PERMUTE_IMM8: i32 = 0b_11_01_10_00;
         
-            let mut src_ptr = data.as_ptr();
-            let mut dst_ptr = buf.as_mut_ptr();
+            let mut data = data;
+            let mut buf = buf;
             
             let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
             let remainder = num_pixels % PIXEL_BLOCK_LEN;
         
             for _ in 0..pixel_blocks {
                 // 前半8ピクセル取得
-                let rgb_1 = M256I::loadu_si256(src_ptr.cast::<M256I>());
-                src_ptr = src_ptr.add(8 * COLOR_TYPE.bytes_per_pixel());
+                let rgb_1 = M256I::loadu_si256(data.cast::<M256I>());
+                data = data.add(8 * COLOR_TYPE.bytes_per_pixel());
                 // 後半8ピクセル取得
-                let rgb_2 = M256I::loadu_si256(src_ptr.cast::<M256I>());
+                let rgb_2 = M256I::loadu_si256(data.cast::<M256I>());
 
                 // RGBに分離
                 let mut r_pixel = rgb_1.shuffle_epi8(R_MASK_1) | rgb_2.shuffle_epi8(R_MASK_2);
@@ -213,14 +206,11 @@ macro_rules! encode_from_endian {
                 // ピクセルに合成
                 let pixel = (r_pixel | g_pixel | b_pixel).$endian_fn();
 
-                pixel.storeu_si256(dst_ptr.cast::<M256I>());
+                pixel.storeu_si256(buf.cast::<M256I>());
                 
-                src_ptr = src_ptr.add(8 * COLOR_TYPE.bytes_per_pixel());
-                dst_ptr = dst_ptr.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
+                data = data.add(8 * COLOR_TYPE.bytes_per_pixel());
+                buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
             }
-        
-            let data = from_raw_parts(src_ptr, remainder * COLOR_TYPE.bytes_per_pixel());
-            let buf = from_raw_parts_mut(dst_ptr, remainder * PIXEL_BYTES);
         
             scalar::$rgba8888(data, buf, remainder)
         }
@@ -247,15 +237,15 @@ mod tests {
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
-            scalar::encode_from_rgb888_be(&RGB888_DATA, &mut scalar_buf, NUM_PIXELS);
-            super::encode_from_rgb888_be(&RGB888_DATA, &mut sse41_buf, NUM_PIXELS);
+            scalar::encode_from_rgb888_be(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, sse41_buf);
 
         unsafe {
-            scalar::encode_from_rgb888_le(&RGB888_DATA, &mut scalar_buf, NUM_PIXELS);
-            super::encode_from_rgb888_le(&RGB888_DATA, &mut sse41_buf, NUM_PIXELS);
+            scalar::encode_from_rgb888_le(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, sse41_buf);
@@ -274,15 +264,15 @@ mod tests {
         let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
         unsafe {
-            scalar::encode_from_rgb565_be(data, &mut scalar_buf, NUM_PIXELS);
-            super::encode_from_rgb565_be(data, &mut sse41_buf, NUM_PIXELS);
+            scalar::encode_from_rgb565_be(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_be(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, sse41_buf);
 
         unsafe {
-            scalar::encode_from_rgb565_le(data, &mut scalar_buf, NUM_PIXELS);
-            super::encode_from_rgb565_le(data, &mut sse41_buf, NUM_PIXELS);
+            scalar::encode_from_rgb565_le(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_le(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, sse41_buf);
@@ -298,15 +288,15 @@ mod tests {
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
-            scalar::encode_from_rgba8888_be(&RGBA8888_DATA, &mut scalar_buf, NUM_PIXELS);
-            super::encode_from_rgba8888_be(&RGBA8888_DATA, &mut sse41_buf, NUM_PIXELS);
+            scalar::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, sse41_buf);
 
         unsafe {
-            scalar::encode_from_rgba8888_le(&RGBA8888_DATA, &mut scalar_buf, NUM_PIXELS);
-            super::encode_from_rgba8888_le(&RGBA8888_DATA, &mut sse41_buf, NUM_PIXELS);
+            scalar::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, sse41_buf);
@@ -325,19 +315,19 @@ mod tests {
         let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
         unsafe {
-            super::encode_from_rgb888_be(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), a_buf.as_mut_ptr(), NUM_PIXELS);
 
-            super::encode_from_rgb565_be(data, &mut b_buf, NUM_PIXELS);
+            super::encode_from_rgb565_be(data.as_ptr(), b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
-            super::encode_from_rgba8888_be(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
+            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
             
-            super::encode_from_rgb888_le(&RGB888_DATA, &mut a_buf, NUM_PIXELS);
+            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), a_buf.as_mut_ptr(), NUM_PIXELS);
 
-            super::encode_from_rgb565_le(data, &mut b_buf, NUM_PIXELS);
+            super::encode_from_rgb565_le(data.as_ptr(), b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
-            super::encode_from_rgba8888_le(&RGBA8888_DATA, &mut b_buf, NUM_PIXELS);
+            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
         }
     }
