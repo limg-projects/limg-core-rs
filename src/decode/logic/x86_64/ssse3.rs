@@ -19,7 +19,7 @@ macro_rules! encode_from_endian {
 
         #[inline]
         #[target_feature(enable = "sse4.1")]
-        pub unsafe fn $rgb888(data: &[u8], buf: &mut [u8], num_pixels: usize) {
+        pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
 
             // バッファオーバーしないための後ピクセルを加味する
@@ -27,8 +27,8 @@ macro_rules! encode_from_endian {
                 return unsafe { scalar::$rgb888(data, buf, num_pixels) };
             }
         
-            let mut src_ptr = data.as_ptr();
-            let mut dst_ptr = buf.as_mut_ptr();
+            let mut data = data;
+            let mut buf = buf;
             
             let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
             let remainder = num_pixels % PIXEL_BLOCK_LEN;
@@ -38,7 +38,7 @@ macro_rules! encode_from_endian {
     };
 }
 
-unsafe fn a(data: &[u8], buf: &mut [u8], num_pixels: usize) {
+unsafe fn a(data: *const u8, buf: *mut u8, num_pixels: usize) {
     const COLOR_TYPE: ColorType = ColorType::Rgb888;
 
     // バッファオーバーしないための後ピクセルを加味する
@@ -46,8 +46,8 @@ unsafe fn a(data: &[u8], buf: &mut [u8], num_pixels: usize) {
         return unsafe { scalar::decode_to_rgb888_be(data, buf, num_pixels) };
     }
 
-    let mut src_ptr = data.as_ptr();
-    let mut dst_ptr = buf.as_mut_ptr();
+    let mut src_ptr = data;
+    let mut dst_ptr = buf;
     
     let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
     let remainder = num_pixels % PIXEL_BLOCK_LEN;
@@ -90,9 +90,6 @@ unsafe fn a(data: &[u8], buf: &mut [u8], num_pixels: usize) {
             dst_ptr = dst_ptr.add(4 * COLOR_TYPE.bytes_per_pixel());
         }
     }
-
-    let data = unsafe { ::core::slice::from_raw_parts(src_ptr, remainder * PIXEL_BYTES) };
-    let buf = unsafe { ::core::slice::from_raw_parts_mut(dst_ptr, remainder * COLOR_TYPE.bytes_per_pixel()) };
     
     unsafe { scalar::decode_to_rgb888_be(data, buf, remainder) }
 }

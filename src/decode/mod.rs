@@ -67,6 +67,8 @@ pub fn decode_data(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: Co
 
 pub unsafe fn decode_data_unchecked(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> usize {
     let num_pixels = spec.num_pixels();
+    let data = data.as_ptr();
+    let buf = buf.as_mut_ptr();
 
     unsafe {
         match spec.data_endian {
