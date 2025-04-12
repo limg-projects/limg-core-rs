@@ -30,10 +30,10 @@ macro_rules! decode_endian {
     ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident, $rgba8888_aplha: ident) => {
         #[inline(always)]
         pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
-            const COLOR_BYTES: usize = ColorType::bytes_per_pixel(ColorType::Rgb888);
+            const COLOR_TYPE: ColorType = ColorType::Rgb888;
 
             let mut data = data.cast::<u16>();
-            let mut buf = buf.cast::<[u8; COLOR_BYTES]>();
+            let mut buf = buf.cast::<[u8; COLOR_TYPE.bytes_per_pixel()]>();
         
             for _ in 0..num_pixels {
                 unsafe {
@@ -76,10 +76,10 @@ macro_rules! decode_endian {
 
         #[inline(always)]
         pub unsafe fn $rgba8888_aplha(data: *const u8, buf: *mut u8, transparent_color: u16, num_pixels: usize) {
-            const COLOR_BYTES: usize = ColorType::bytes_per_pixel(ColorType::Rgba8888);
+            const COLOR_TYPE: ColorType = ColorType::Rgba8888;
         
             let mut data = data.cast::<u16>();
-            let mut buf = buf.cast::<[u8; COLOR_BYTES]>();
+            let mut buf = buf.cast::<[u8; COLOR_TYPE.bytes_per_pixel()]>();
         
             for _ in 0..num_pixels {
                 unsafe {
