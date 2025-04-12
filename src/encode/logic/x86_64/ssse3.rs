@@ -2,23 +2,23 @@
 
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::encode::logic::scalar;
-use crate::common::logic::x86_64::M256I;
+use crate::common::logic::x86_64::M128I;
 
-const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit
+const PIXEL_BLOCK_LEN: usize = 8; // u16(16 bit) * 8 = 128 bit
 
 #[inline]
-#[target_feature(enable = "avx2")]
+#[target_feature(enable = "ssse3")]
 pub unsafe fn encode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels: usize) {
     let mut data = data;
     let mut buf = buf;
-    
+
     let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
     let remainder = num_pixels % PIXEL_BLOCK_LEN;
 
     for _ in 0..pixel_blocks {
-        let pixel = M256I::loadu_si256(data.cast::<M256I>()).swap_epi16();
+        let src = M128I::loadu_si128(data.cast::<M128I>()).swap_epi16();
 
-        pixel.storeu_si256(buf.cast::<M256I>());
+        src.storeu_si128(buf.cast::<M128I>());
         
         data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
         buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
@@ -29,96 +29,59 @@ pub unsafe fn encode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels:
 
 macro_rules! encode_from_endian {
     ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident) => {
-
-        // -- rgb888 ----------------------------
+        // -- rgb888 ------------------------------
 
         #[inline]
-        #[target_feature(enable = "avx2")]
+        #[target_feature(enable = "ssse3")]
         pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
+        
+            const R_MASK_1: M128I = unsafe { M128I::new_i8(0, -1, 3, -1, 6, -1,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const G_MASK_1: M128I = unsafe { M128I::new_i8(1, -1, 4, -1, 7, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const B_MASK_1: M128I = unsafe { M128I::new_i8(2, -1, 5, -1, 8, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+        
+            const R_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 3, -1, 6, -1,  9, -1) };
+            const G_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 4, -1, 7, -1, 10, -1) };
+            const B_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 5, -1, 8, -1, 11, -1) };
 
-            const R_MASK_1: M256I = unsafe { M256I::const_i8::<
-                4, -1, 7, -1, 10, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                0, -1, 3, -1,  6, -1,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            >() };
-
-            const G_MASK_1: M256I = unsafe { M256I::const_i8::<
-                5, -1, 8, -1, 11, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                1, -1, 4, -1,  7, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            >() };
-
-            const B_MASK_1: M256I = unsafe { M256I::const_i8::<
-                6, -1, 9, -1, 12, -1, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                2, -1, 5, -1,  8, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            >() };
-
-            const R_MASK_2: M256I = unsafe { M256I::const_i8::<
-                -1, -1, -1, -1, -1, -1, -1, -1, 4, -1, 7, -1, 10, -1, 13, -1,
-                -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 3, -1,  6, -1,  9, -1,
-            >() };
-
-            const G_MASK_2: M256I = unsafe { M256I::const_i8::<
-                -1, -1, -1, -1, -1, -1, -1, -1, 5, -1, 8, -1, 11, -1, 14, -1,
-                -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 4, -1,  7, -1, 10, -1,
-            >() };
-
-            const B_MASK_2: M256I = unsafe { M256I::const_i8::<
-                -1, -1, -1, -1, -1, -1, -1, -1, 6, -1, 9, -1, 12, -1, 15, -1,
-                -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 5, -1,  8, -1, 11, -1,
-            >() };
-
-            const PERMUTE_IMM8: i32 = 0b_11_01_10_00;
-
-            // バッファオーバーしないための前後ピクセルを加味する
-            if num_pixels < PIXEL_BLOCK_LEN + 2 + 2 {
-                scalar::$rgb888(data, buf, num_pixels);
+            // バッファオーバーしないための後ピクセルを加味する
+            if num_pixels < PIXEL_BLOCK_LEN + 2 {
+                return scalar::$rgb888(data, buf, num_pixels);
             }
-
-            // 先頭の2ピクセル先に処理する
-            scalar::$rgb888(data, buf, 2);
-            let num_pixels = num_pixels - 2;
-
-            // 後半処理のため2バイトずらす
-            let mut data = data.add(2);
-            // 2ピクセル部分進めておく
-            let mut buf = buf.add(PIXEL_BYTES * 2);
-
+        
+            let mut data = data;
+            let mut buf = buf;
             
-            let pixel_blocks = (num_pixels - 2) / PIXEL_BLOCK_LEN;
-            let remainder = num_pixels - (PIXEL_BLOCK_LEN * pixel_blocks);
+            let pixel_blocks = num_pixels / PIXEL_BLOCK_LEN;
+            let remainder = num_pixels % PIXEL_BLOCK_LEN;
         
             for _ in 0..pixel_blocks {
-                // 前半8ピクセル取得
-                let rgb_1 = M256I::loadu_si256(data.cast::<M256I>());
-                data = data.add(8 * COLOR_TYPE.bytes_per_pixel() ); 
-                // 後半8ピクセル取得
-                let rgb_2 = M256I::loadu_si256(data.cast::<M256I>());
+                // 前半4ピクセル取得
+                let rgb_1 = M128I::loadu_si128(data.cast::<M128I>());
+                data = data.add(4 * COLOR_TYPE.bytes_per_pixel());
+                // 後半4ピクセル取得
+                let rgb_2 = M128I::loadu_si128(data.cast::<M128I>());
 
-                // RGBに分離
+                // RGBを分離
                 let mut r_pixel = rgb_1.shuffle_epi8(R_MASK_1) | rgb_2.shuffle_epi8(R_MASK_2);
                 let mut g_pixel = rgb_1.shuffle_epi8(G_MASK_1) | rgb_2.shuffle_epi8(G_MASK_2);
                 let mut b_pixel = rgb_1.shuffle_epi8(B_MASK_1) | rgb_2.shuffle_epi8(B_MASK_2);
-
-                // 正しい順序に並び替え
-                r_pixel = r_pixel.permute4x64_epi64::<PERMUTE_IMM8>();
-                g_pixel = g_pixel.permute4x64_epi64::<PERMUTE_IMM8>();
-                b_pixel = b_pixel.permute4x64_epi64::<PERMUTE_IMM8>();
-
+    
                 // 減色 + 位置調整
                 r_pixel = r_pixel.srli_epi16::<3>().slli_epi16::<11>(); // (R >> 3) << 11
                 g_pixel = g_pixel.srli_epi16::<2>().slli_epi16::<5>();  // (G >> 2) << 5
                 b_pixel = b_pixel.srli_epi16::<3>();                    // (B >> 3)
-
+    
                 // ピクセルに合成
                 let pixel = (r_pixel | g_pixel | b_pixel).$endian_fn();
-    
-                pixel.storeu_si256(buf.cast::<M256I>());
+
+                pixel.storeu_si128(buf.cast::<M128I>());
                 
-                data = data.add(8 * COLOR_TYPE.bytes_per_pixel());
+                data = data.add(4 * COLOR_TYPE.bytes_per_pixel());
                 buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
             }
         
-            scalar::$rgb888(data.add(4), buf, remainder)
+            scalar::$rgb888(data, buf, remainder)
         }
 
         // -- rgb565 ------------------------------
@@ -130,7 +93,7 @@ macro_rules! encode_from_endian {
         }
         
         #[inline]
-        #[target_feature(enable = "avx2")]
+        #[target_feature(enable = "ssse3")]
         #[cfg(not(target_endian = $endian))]
         pub unsafe fn $rgb565(data: *const u8, buf: *mut u8, num_pixels: usize) {
             encode_from_rgb565_swap(data, buf, num_pixels)
@@ -139,41 +102,17 @@ macro_rules! encode_from_endian {
         // -- rgba8888 ----------------------------
 
         #[inline]
-        #[target_feature(enable = "avx2")]
+        #[target_feature(enable = "ssse3")]
         pub unsafe fn $rgba8888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
-
-            const R_MASK_1: M256I = unsafe { M256I::const_i8::<
-                0, -1, 4, -1, 8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                0, -1, 4, -1, 8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            >() };
-
-            const G_MASK_1: M256I = unsafe { M256I::const_i8::<
-                1, -1, 5, -1, 9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                1, -1, 5, -1, 9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            >() };
-
-            const B_MASK_1: M256I = unsafe { M256I::const_i8::<
-                2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            >() };
-
-            const R_MASK_2: M256I = unsafe { M256I::const_i8::<
-                -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1, 8, -1, 12, -1,
-                -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1, 8, -1, 12, -1,
-            >() };
-
-            const G_MASK_2: M256I = unsafe { M256I::const_i8::<
-                -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1, 9, -1, 13, -1,
-                -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1, 9, -1, 13, -1,
-            >() };
-
-            const B_MASK_2: M256I = unsafe { M256I::const_i8::<
-                -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1,
-                -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1,
-            >() };
-
-            const PERMUTE_IMM8: i32 = 0b_11_01_10_00;
+        
+            const R_MASK_1: M128I = unsafe { M128I::new_i8(0, -1, 4, -1, 8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const G_MASK_1: M128I = unsafe { M128I::new_i8(1, -1, 5, -1, 9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const B_MASK_1: M128I = unsafe { M128I::new_i8(2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+        
+            const R_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1, 8, -1, 12, -1) };
+            const G_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1, 9, -1, 13, -1) };
+            const B_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1) };
         
             let mut data = data;
             let mut buf = buf;
@@ -182,21 +121,16 @@ macro_rules! encode_from_endian {
             let remainder = num_pixels % PIXEL_BLOCK_LEN;
         
             for _ in 0..pixel_blocks {
-                // 前半8ピクセル取得
-                let rgb_1 = M256I::loadu_si256(data.cast::<M256I>());
-                data = data.add(8 * COLOR_TYPE.bytes_per_pixel());
-                // 後半8ピクセル取得
-                let rgb_2 = M256I::loadu_si256(data.cast::<M256I>());
+                // 前半4ピクセル取得
+                let rgb_1 = M128I::loadu_si128(data.cast::<M128I>());
+                data = data.add(4 * COLOR_TYPE.bytes_per_pixel());
+                // 後半4ピクセル取得
+                let rgb_2 = M128I::loadu_si128(data.cast::<M128I>());
 
                 // RGBに分離
                 let mut r_pixel = rgb_1.shuffle_epi8(R_MASK_1) | rgb_2.shuffle_epi8(R_MASK_2);
                 let mut g_pixel = rgb_1.shuffle_epi8(G_MASK_1) | rgb_2.shuffle_epi8(G_MASK_2);
                 let mut b_pixel = rgb_1.shuffle_epi8(B_MASK_1) | rgb_2.shuffle_epi8(B_MASK_2);
-
-                // 正しい順序に並び替え
-                r_pixel = r_pixel.permute4x64_epi64::<PERMUTE_IMM8>();
-                g_pixel = g_pixel.permute4x64_epi64::<PERMUTE_IMM8>();
-                b_pixel = b_pixel.permute4x64_epi64::<PERMUTE_IMM8>();
 
                 // 減色 + 位置調整
                 r_pixel = r_pixel.srli_epi16::<3>().slli_epi16::<11>(); // (R >> 3) << 11
@@ -206,12 +140,12 @@ macro_rules! encode_from_endian {
                 // ピクセルに合成
                 let pixel = (r_pixel | g_pixel | b_pixel).$endian_fn();
 
-                pixel.storeu_si256(buf.cast::<M256I>());
+                pixel.storeu_si128(buf.cast::<M128I>());
                 
-                data = data.add(8 * COLOR_TYPE.bytes_per_pixel());
+                data = data.add(4 * COLOR_TYPE.bytes_per_pixel());
                 buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
             }
-        
+                
             scalar::$rgba8888(data, buf, remainder)
         }
     };
@@ -223,16 +157,16 @@ encode_from_endian!("little", le_epi16, encode_from_rgb888_le, encode_from_rgb56
 #[cfg(test)]
 mod tests {
     use crate::encode::logic::scalar;
-    use crate::pixel::PIXEL_BYTES;
+    use crate::PIXEL_BYTES;
 
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
-    fn encode_rgb888_x86_64_avx2() {
-        if !is_x86_feature_detected!("avx2") {
+    fn encode_rgb888_x86_64_sse41() {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
-
+        
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
         let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
@@ -252,8 +186,8 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgb565_x86_64_avx2() {
-        if !is_x86_feature_detected!("avx2") {
+    fn encode_rgb565_x86_64_sse41() {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
@@ -279,8 +213,8 @@ mod tests {
     }
 
     #[test]
-    fn encode_rgba8888_x86_64_avx2() {
-        if !is_x86_feature_detected!("avx2") {
+    fn encode_rgba8888_x86_64_sse41() {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
@@ -303,8 +237,8 @@ mod tests {
     }
 
     #[test]
-    fn encode_endian_x86_64_avx2() {
-        if !is_x86_feature_detected!("avx2") {
+    fn encode_endian_x86_64_sse41() {
+        if !is_x86_feature_detected!("ssse3") {
             return;
         }
 

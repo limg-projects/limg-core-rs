@@ -18,10 +18,10 @@ use logic::{
 /// # Examples
 /// 
 /// ```
-/// use limg_core::{ImageSpec, encode_bounds, rgb_to_pixel};
+/// use limg_core::{ImageSpec, encoded_size, rgb_to_pixel};
 /// 
 /// let spec = ImageSpec::new(100, 100, rgb_to_pixel([0, 0, 0]));
-/// let bounds = encode_bounds(&spec);
+/// let bounds = encoded_size(&spec);
 /// 
 /// // HeaderSize(12) + width(100) * height(100) * PixelSize(2)
 /// assert_eq!(bounds, 20012);
@@ -32,86 +32,56 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
 }
 
 #[inline]
-pub fn encode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
+pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
+    let num_pixels = spec.width as usize * spec.height as usize;
 
-    let buf = buf.as_mut();
-    let size = encoded_size(spec);
-
-    if buf.len() < size {
+    if num_pixels == 0 {
+        return Err(Error::ZeroImageDimensions);
+    }
+    if data.len() < color_type.bytes_per_pixel() * num_pixels {
+        return Err(Error::InputBufferTooSmall);
+    }
+    if buf.len() < IMAGE_HEADER_SIZE + PIXEL_BYTES * num_pixels {
         return Err(Error::OutputBufferTooSmall);
     }
 
-    unsafe { encode_image(data, buf, spec, color_type) };
+    let mut written_size = 0;
 
-    Ok(size)
+    unsafe {
+        written_size += encode_header_unchecked(buf.get_unchecked_mut(..IMAGE_HEADER_SIZE), spec);
+        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(IMAGE_HEADER_SIZE..), num_pixels, spec.data_endian, color_type);
+    }
+
+    debug_assert_eq!(written_size, encoded_size(spec));
+
+    Ok(written_size)
 }
 
-#[cfg(feature = "alloc")]
 #[inline]
-pub fn encode_to_vec(data: impl AsRef<[u8]>, spec: &ImageSpec, color_type: ColorType) -> Result<alloc::vec::Vec<u8>> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
+pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
+    let num_pixel = spec.width as usize * spec.height as usize;
 
-    let vec = unsafe {
-        let size = encoded_size(spec);
-
-        // 未初期化バッファの確保
-        let mut buf = alloc::vec::Vec::with_capacity(size);
-        buf.set_len(size);
-
-        // バッファに書き込み
-        encode_image(data, &mut buf, spec, color_type);
-
-        buf
-    };
-    
-    Ok(vec)
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn encode_to_write(data: impl AsRef<[u8]>, writer: &mut impl std::io::Write, spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
-
-    let buf = encode_to_vec(data, spec, color_type)?;
-    writer.write_all(&buf)?;
-    Ok(buf.len())
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn encode_to_file(data: impl AsRef<[u8]>, path: impl AsRef<std::path::Path>, spec: &ImageSpec, color_type: ColorType) -> Result<()> {
-    let data = data.as_ref();
-    encode_args_check(data, spec, color_type)?;
-
-    let mut file = std::fs::File::create(path)?;
-    encode_to_write(data.as_ref(), &mut file, spec, color_type)?;
-    Ok(())
-}
-
-#[inline(always)]
-fn encode_args_check(data: &[u8], spec: &ImageSpec, color_type: ColorType) -> Result<()> {
-    if spec.is_zero_dimensions() {
+    if num_pixel == 0 {
         return Err(Error::ZeroImageDimensions);
     }
-    if data.len() < spec.num_pixels() * color_type.bytes_per_pixel() {
-        return Err(Error::InputBufferTooSmall);
+
+    if buf.len() < IMAGE_HEADER_SIZE {
+        return Err(Error::OutputBufferTooSmall);
     }
 
-    Ok(())
+    unsafe {
+        Ok(encode_header_unchecked(buf, spec))
+    }
 }
 
-unsafe fn encode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) {
+unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     let header = ImageHeaderInternal {
         signature: IMAGE_SIGNATURE_U32_NE,
         version: IMAGE_CURRENT_VARSION,
         flag: spec.flag(),
         width: spec.width.to_le(),
         height: spec.height.to_le(),
-        transparent_color: spec.transparent_color.unwrap_or(0),
+        transparent_color: spec.transparent_color.unwrap_or(0).to_le(),
     };
 
     let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();
@@ -120,11 +90,30 @@ unsafe fn encode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
         ::core::ptr::copy_nonoverlapping(header_ptr, buf.as_mut_ptr(), IMAGE_HEADER_SIZE);
     }
 
-    let buf = unsafe { buf.get_unchecked_mut(IMAGE_HEADER_SIZE..) };
-    let num_pixels = spec.num_pixels();
+    IMAGE_HEADER_SIZE
+}
+
+#[inline]
+pub fn encode_data(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> Result<usize> {
+    if data.len() < color_type.bytes_per_pixel() * num_pixels {
+        return Err(Error::InputBufferTooSmall);
+    }
+
+    if buf.len() < PIXEL_BYTES * num_pixels {
+        return Err(Error::OutputBufferTooSmall);
+    }
 
     unsafe {
-        match spec.data_endian {
+        Ok(encode_data_unchecked(data, buf, num_pixels, data_endian, color_type))
+    }
+}
+
+pub unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> usize {
+    let data = data.as_ptr();
+    let buf = buf.as_mut_ptr();
+
+    unsafe {
+        match data_endian {
             DataEndian::Big => {
                 match color_type {
                     ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
@@ -141,4 +130,6 @@ unsafe fn encode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
             },
         }
     }
+
+    PIXEL_BYTES * color_type.bytes_per_pixel()
 }

@@ -1,16 +1,11 @@
-mod scalar;
+mod logic;
 
 use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
-use ::core::slice::from_raw_parts_mut;
-use ::core::mem::MaybeUninit;
 
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
-
-use scalar::{
+use logic::{
     decode_to_rgb888_be,   decode_to_rgb888_le,
     decode_to_rgb565_be,   decode_to_rgb565_le,
     decode_to_rgba8888_be, decode_to_rgba8888_le,
@@ -18,121 +13,16 @@ use scalar::{
 };
 
 #[inline]
-pub fn decode_to_buffer(data: impl AsRef<[u8]>, buf: &mut impl AsMut<[u8]>, color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let data = data.as_ref();
-
-    let header = from_data_header(data)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
+pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(ImageSpec, usize)> {
+    let spec = decode_header(data)?;
 
     let data = unsafe { data.get_unchecked(IMAGE_HEADER_SIZE..) };
-
-    if data.len() < num_pixels * PIXEL_BYTES {
-        return Err(Error::InputBufferTooSmall);
-    }
-
-    let buf = buf.as_mut();
-    let written_size = num_pixels * color_type.bytes_per_pixel();
-
-    if buf.len() < written_size {
-        return Err(Error::OutputBufferTooSmall);
-    }
-
-    unsafe { decode_image(data, buf, &spec, color_type); }
+    let written_size = decode_data(data, buf, &spec, color_type)?;
 
     Ok((spec, written_size))
 }
 
-#[cfg(feature = "alloc")]
-#[inline]
-pub fn decode_to_vec(data: impl AsRef<[u8]>, color_type: ColorType) -> Result<(ImageSpec, Vec<u8>)> {
-    let data = data.as_ref();
-
-    let header = from_data_header(data)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
-
-    let data = unsafe { data.get_unchecked(IMAGE_HEADER_SIZE..) };
-
-    if data.len() < num_pixels * PIXEL_BYTES {
-        return Err(Error::InputBufferTooSmall);
-    }
-
-    let vec = unsafe {
-        let size = num_pixels * color_type.bytes_per_pixel();
-
-        let mut buf = Vec::with_capacity(size);
-        buf.set_len(size);
-
-        decode_image(data, &mut buf, &spec, color_type);
-
-        buf
-    };
-
-    Ok((spec, vec))
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_read_to_buffer(read: &mut impl std::io::Read, buf: &mut impl AsMut<[u8]>, color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let header = read_header(read)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
-
-    let buf = buf.as_mut();
-    let written_size = num_pixels * color_type.bytes_per_pixel();
-
-    if buf.len() < written_size {
-        return Err(Error::OutputBufferTooSmall);
-    }
-
-    let mut data = Vec::with_capacity(num_pixels * PIXEL_BYTES);
-    read.read_exact(&mut data)?;
-
-    unsafe { decode_image(&data, buf, &spec, color_type); }
-
-    Ok((spec, written_size))
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_read_to_vec(read: &mut impl std::io::Read, color_type: ColorType) -> Result<(ImageSpec, Vec<u8>)> {
-    let header = read_header(read)?;
-    let spec = header_to_spec(&header)?;
-    let num_pixels = spec.num_pixels();
-
-    let mut data = Vec::with_capacity(num_pixels * PIXEL_BYTES);
-    read.read_exact(&mut data)?;
-
-    let vec = unsafe {
-        let size = num_pixels * color_type.bytes_per_pixel();
-
-        let mut buf = Vec::with_capacity(size);
-        buf.set_len(size);
-
-        decode_image(&data, &mut buf, &spec, color_type);
-
-        buf
-    };
-
-    Ok((spec, vec))
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_file_to_buffer(path: impl AsRef<std::path::Path>, buf: &mut impl AsMut<[u8]>, color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let mut file = std::fs::File::open(path)?;
-    decode_from_read_to_buffer(&mut file, buf, color_type)
-}
-
-#[cfg(feature = "std")]
-#[inline]
-pub fn decode_from_file_to_vec(path: impl AsRef<std::path::Path>, color_type: ColorType) -> Result<(ImageSpec, Vec<u8>)> {
-    let mut file = std::fs::File::open(path)?;
-    decode_from_read_to_vec(&mut file, color_type)
-}
-
-fn from_data_header(data: &[u8]) -> Result<ImageHeaderInternal> {
+pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
     if data.len() < IMAGE_HEADER_SIZE {
         return Err(Error::InputBufferTooSmall);
     }
@@ -140,41 +30,42 @@ fn from_data_header(data: &[u8]) -> Result<ImageHeaderInternal> {
     let header_ptr = data.as_ptr().cast::<ImageHeaderInternal>();
     let header = unsafe { header_ptr.read_unaligned() };
 
-    Ok(header)
-}
-
-#[inline(always)]
-fn read_header(read: &mut impl std::io::Read) -> Result<ImageHeaderInternal> {
-    let mut header = MaybeUninit::<ImageHeaderInternal>::uninit();
-    let header_buf = unsafe { from_raw_parts_mut(header.as_mut_ptr().cast::<u8>(), IMAGE_HEADER_SIZE) };
-    read.read_exact(header_buf)?;
-
-    unsafe { Ok(header.assume_init()) }
-}
-
-#[inline(always)]
-fn header_to_spec(header: &ImageHeaderInternal) -> Result<ImageSpec> {
-    // シグネチャが一致しない場合はエラー
-    // 幅か高さが0の場合もエラー
-    // 0の場合エンディアン関係なく0なのでそのまま比較
-    if header.signature != IMAGE_SIGNATURE_U32_NE || header.width == 0 || header.height == 0 {
+    if header.signature != IMAGE_SIGNATURE_U32_NE {
         return Err(Error::UnsupportedFormat);
     }
 
+    // エンディアン関係なく0はチェック可能
+    if header.width == 0 || header.height == 0 {
+        return Err(Error::UnsupportedFormat);
+    }
+
+    let transparent_color = if (header.flag & IMAGE_FLAG_USE_TRANSPARENT_BIT) != 0 { Some(header.transparent_color) } else { None };
     let data_endian = unsafe { ::core::mem::transmute(header.flag & IMAGE_FLAG_ENDIAN_BIT) };
-    let use_transparent = (header.flag & IMAGE_FLAG_USE_TRANSPARENT_BIT) != 0;
-    let transparent_color = if use_transparent { Some(header.transparent_color) } else { None };
 
     Ok(ImageSpec {
-        width: header.width.to_le(),
-        height: header.height.to_le(),
+        width: u16::from_le(header.width),
+        height: u16::from_le(header.height),
         transparent_color,
         data_endian
     })
 }
 
-#[inline(always)]
-unsafe fn decode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) {
+#[inline]
+pub fn decode_data(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
+    let num_pixels = spec.num_pixels();
+
+    if data.len() < PIXEL_BYTES * num_pixels {
+        return Err(Error::InputBufferTooSmall);
+    }
+
+    if buf.len() < color_type.bytes_per_pixel() * num_pixels {
+        return Err(Error::OutputBufferTooSmall);
+    }
+
+    unsafe { Ok(decode_data_unchecked(data, buf, spec, color_type)) }
+}
+
+pub unsafe fn decode_data_unchecked(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> usize {
     let num_pixels = spec.num_pixels();
 
     unsafe {
@@ -207,4 +98,6 @@ unsafe fn decode_image(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type
             },
         }
     }
+    
+    color_type.bytes_per_pixel() * num_pixels
 }

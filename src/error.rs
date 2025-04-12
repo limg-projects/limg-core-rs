@@ -16,9 +16,6 @@ pub enum Error {
 
     /// The image format or header is not supported or invalid.
     UnsupportedFormat,
-
-    #[cfg(feature = "std")]
-    IoError(std::io::Error)
 }
 
 impl fmt::Display for Error {
@@ -28,17 +25,6 @@ impl fmt::Display for Error {
             Error::InputBufferTooSmall => write!(f, "Input buffer is too small"),
             Error::OutputBufferTooSmall => write!(f, "Output buffer is too small"),
             Error::UnsupportedFormat => write!(f, "Unsupported image format or header"),
-            #[cfg(feature = "std")]
-            Error::IoError(err) => err.fmt(f),
         }
-    }
-}
-
-impl ::core::error::Error for Error {}
-
-#[cfg(feature = "std")]
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::IoError(err)
     }
 }
