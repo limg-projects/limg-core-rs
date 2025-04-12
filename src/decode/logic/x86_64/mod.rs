@@ -6,9 +6,9 @@ mod avx2;
 pub use avx2::*;
 
 #[cfg(any(test, all(not(target_feature = "avx2"), target_feature = "sse4.1")))]
-mod sse41;
+mod ssse3;
 #[cfg(all(not(target_feature = "avx2"), target_feature = "sse4.1"))]
-pub use sse41::*;
+pub use ssse3::*;
 
 #[cfg(all(not(target_feature = "avx2"), not(target_feature = "sse4.1")))]
 pub use crate::decode::logic::scalar::*;
