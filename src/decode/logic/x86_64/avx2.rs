@@ -1,5 +1,6 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
+use crate::decode_logic_fn;
 use crate::pixel::{ColorType, PIXEL_BYTES, PIXEL_R_MASK, PIXEL_G_MASK, PIXEL_B_MASK};
 use crate::decode::logic::scalar;
 use crate::common::logic::x86_64::M256I;
@@ -244,6 +245,8 @@ macro_rules! decode_from_endian {
     };
 }
 
+decode_logic_fn!();
+
 decode_from_endian!(
     "big",
     be_epi16,
@@ -265,9 +268,58 @@ decode_from_endian!(
 #[cfg(test)]
 mod tests {
     use crate::decode::logic::scalar;
-    use crate::pixel::PIXEL_BYTES;
+    use crate::pixel::ColorType;
+    use crate::spec::{ImageSpec, DataEndian};
 
     use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA_BE, RGB565_DATA_LE};
+
+    #[test]
+    fn decode_logic_x86_64_avx2() {
+        if !is_x86_feature_detected!("avx2") {
+            return;
+        }
+
+        let mut a_buf = [0; NUM_PIXELS * ColorType::Rgba8888.bytes_per_pixel()];
+        let mut b_buf = [0; NUM_PIXELS * ColorType::Rgba8888.bytes_per_pixel()];
+
+        let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
+        let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
+
+        let mut spec = ImageSpec {
+            width: NUM_PIXELS as u16,
+            height: 1,
+            transparent_color: Some(0xFF),
+            data_endian: DataEndian::Big
+        };
+
+        unsafe {
+            super::decode_logic(rgb565_be_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
+            super::decode_to_rgb888_be(rgb565_be_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+
+            super::decode_logic(rgb565_be_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb565);
+            super::decode_to_rgb565_be(rgb565_be_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+
+            super::decode_logic(rgb565_be_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgba8888);
+            super::decode_to_rgba8888_be(rgb565_be_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+
+            spec.data_endian = DataEndian::Little;
+            
+            super::decode_logic(rgb565_le_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
+            super::decode_to_rgb888_le(rgb565_le_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+
+            super::decode_logic(rgb565_le_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb565);
+            super::decode_to_rgb565_le(rgb565_le_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+
+            super::decode_logic(rgb565_le_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgba8888);
+            super::decode_to_rgba8888_le(rgb565_le_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
+            assert_eq!(a_buf, b_buf);
+        }
+    }
 
     #[test]
     fn decode_rgb888_x86_64_avx2() {
@@ -275,19 +327,22 @@ mod tests {
             return;
         }
         
-        let mut scalar_buf = [0; NUM_PIXELS * 3];
-        let mut simd_buf = [0; NUM_PIXELS * 3];
+        let mut scalar_buf = [0; NUM_PIXELS * ColorType::Rgb888.bytes_per_pixel()];
+        let mut simd_buf = [0; NUM_PIXELS * ColorType::Rgb888.bytes_per_pixel()];
+
+        let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
+        let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
 
         unsafe {
-            scalar::decode_to_rgb888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb888_be(rgb565_be_ptr, scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb888_be(rgb565_be_ptr, simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgb888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb888_le(rgb565_le_ptr, scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb888_le(rgb565_le_ptr, simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
@@ -299,19 +354,22 @@ mod tests {
             return;
         }
 
-        let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut scalar_buf = [0; NUM_PIXELS * ColorType::Rgb565.bytes_per_pixel()];
+        let mut simd_buf = [0; NUM_PIXELS * ColorType::Rgb565.bytes_per_pixel()];
+
+        let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
+        let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
 
         unsafe {
-            scalar::decode_to_rgb565_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb565_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb565_be(rgb565_be_ptr, scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb565_be(rgb565_be_ptr, simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgb565_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgb565_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgb565_le(rgb565_le_ptr, scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgb565_le(rgb565_le_ptr, simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
@@ -323,19 +381,22 @@ mod tests {
             return;
         }
 
-        let mut scalar_buf = [0; NUM_PIXELS * 4];
-        let mut simd_buf = [0; NUM_PIXELS * 4];
+        let mut scalar_buf = [0; NUM_PIXELS * ColorType::Rgba8888.bytes_per_pixel()];
+        let mut simd_buf = [0; NUM_PIXELS * ColorType::Rgba8888.bytes_per_pixel()];
+
+        let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
+        let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
 
         unsafe {
-            scalar::decode_to_rgba8888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgba8888_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgba8888_be(rgb565_be_ptr, scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgba8888_be(rgb565_be_ptr, simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgba8888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::decode_to_rgba8888_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), NUM_PIXELS);
+            scalar::decode_to_rgba8888_le(rgb565_le_ptr, scalar_buf.as_mut_ptr(), NUM_PIXELS);
+            super::decode_to_rgba8888_le(rgb565_le_ptr, simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
@@ -347,21 +408,24 @@ mod tests {
             return;
         }
 
-        let mut scalar_buf = [0; NUM_PIXELS * 4];
-        let mut simd_buf = [0; NUM_PIXELS * 4];
+        let mut scalar_buf = [0; NUM_PIXELS * ColorType::Rgba8888.bytes_per_pixel()];
+        let mut simd_buf = [0; NUM_PIXELS * ColorType::Rgba8888.bytes_per_pixel()];
 
-        let transparent_color = crate::rgb_to_pixel([255, 255, 255]);
+        let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
+        let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
+
+        let transparent_color = crate::pixel::rgb_to_pixel([255, 255, 255]);
 
         unsafe {
-            scalar::decode_to_rgba8888_alpha_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
-            super::decode_to_rgba8888_alpha_be(RGB565_DATA_BE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            scalar::decode_to_rgba8888_alpha_be(rgb565_be_ptr, scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            super::decode_to_rgba8888_alpha_be(rgb565_be_ptr, simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
-            scalar::decode_to_rgba8888_alpha_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
-            super::decode_to_rgba8888_alpha_le(RGB565_DATA_LE.as_ptr().cast::<u8>(), simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            scalar::decode_to_rgba8888_alpha_le(rgb565_le_ptr, scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
+            super::decode_to_rgba8888_alpha_le(rgb565_le_ptr, simd_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
         }
 
         assert_eq!(scalar_buf, simd_buf);
