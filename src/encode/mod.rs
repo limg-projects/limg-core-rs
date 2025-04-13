@@ -44,7 +44,7 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
 
     unsafe {
         written_size += encode_header_unchecked(buf.get_unchecked_mut(..IMAGE_HEADER_SIZE), spec);
-        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(IMAGE_HEADER_SIZE..), num_pixels, spec.data_endian, color_type);
+        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(IMAGE_HEADER_SIZE..), spec, color_type);
     }
 
     debug_assert_eq!(written_size, encoded_size(spec));
@@ -87,7 +87,9 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 }
 
 #[inline]
-pub fn encode_data(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> Result<usize> {
+pub fn encode_data(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
+    let num_pixels = spec.num_pixels();
+
     if data.len() < color_type.bytes_per_pixel() * num_pixels {
         return Err(Error::InputBufferTooSmall);
     }
@@ -97,11 +99,11 @@ pub fn encode_data(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: 
     }
 
     unsafe {
-        Ok(encode_data_unchecked(data, buf, num_pixels, data_endian, color_type))
+        Ok(encode_data_unchecked(data, buf, spec, color_type))
     }
 }
 
 #[inline(always)]
-unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> usize {
-    unsafe { logic::encode_logic(data.as_ptr(), buf.as_mut_ptr(), num_pixels, data_endian, color_type) }
+unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> usize {
+    unsafe { logic::encode_logic(data.as_ptr(), buf.as_mut_ptr(), spec, color_type) }
 }

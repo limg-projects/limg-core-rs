@@ -226,7 +226,7 @@ encode_from_endian!("little", le_epi16, encode_from_rgb888_le, encode_from_rgb56
 mod tests {
     use crate::encode::logic::scalar;
     use crate::pixel::{ColorType, PIXEL_BYTES};
-    use crate::spec::DataEndian;
+    use crate::spec::{DataEndian, ImageSpec};
 
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
@@ -243,29 +243,32 @@ mod tests {
         let rgb565_ptr = RGB565_DATA.as_ptr().cast::<u8>();
         let rgba8888_ptr  = RGBA8888_DATA.as_ptr();
 
+        let mut spec = ImageSpec::with_data_endian(NUM_PIXELS as u16, 1, DataEndian::Big);
+
         unsafe {
-            super::encode_logic(rgb888_ptr, a_buf.as_mut_ptr(), NUM_PIXELS, DataEndian::Big, ColorType::Rgb888);
+            super::encode_logic(rgb888_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
             super::encode_from_rgb888_be(rgb888_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
-            super::encode_logic(rgb565_ptr, a_buf.as_mut_ptr(), NUM_PIXELS, DataEndian::Big, ColorType::Rgb565);
+            super::encode_logic(rgb565_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb565);
             super::encode_from_rgb565_be(rgb565_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
-            super::encode_logic(rgba8888_ptr, a_buf.as_mut_ptr(), NUM_PIXELS, DataEndian::Big, ColorType::Rgba8888);
+            super::encode_logic(rgba8888_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgba8888);
             super::encode_from_rgba8888_be(rgba8888_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
+            spec.data_endian = DataEndian::Little;
             
-            super::encode_logic(rgb888_ptr, a_buf.as_mut_ptr(), NUM_PIXELS, DataEndian::Little, ColorType::Rgb888);
+            super::encode_logic(rgb888_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
             super::encode_from_rgb888_le(rgb888_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
-            super::encode_logic(rgb565_ptr, a_buf.as_mut_ptr(), NUM_PIXELS, DataEndian::Little, ColorType::Rgb565);
+            super::encode_logic(rgb565_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb565);
             super::encode_from_rgb565_le(rgb565_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
-            super::encode_logic(rgba8888_ptr, a_buf.as_mut_ptr(), NUM_PIXELS, DataEndian::Little, ColorType::Rgba8888);
+            super::encode_logic(rgba8888_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgba8888);
             super::encode_from_rgba8888_le(rgba8888_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
         }

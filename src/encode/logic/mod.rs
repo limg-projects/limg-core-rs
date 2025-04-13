@@ -14,9 +14,11 @@ macro_rules! encode_logic_fn {
 
       #[inline(never)]
       $(#[$attr])*
-      pub unsafe fn encode_logic(data: *const u8, buf: *mut u8, num_pixels: usize, data_endian: crate::spec::DataEndian, color_type: crate::pixel::ColorType) -> usize {
+      pub unsafe fn encode_logic(data: *const u8, buf: *mut u8, spec: &crate::spec::ImageSpec, color_type: crate::pixel::ColorType) -> usize {
+		let num_pixels = spec.num_pixels();
+
         unsafe {
-			match data_endian {
+			match spec.data_endian {
 				crate::spec::DataEndian::Big => {
 					match color_type {
 						crate::pixel::ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
