@@ -1,8 +1,7 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
-use crate::encode_logic_fn;
 use crate::pixel::{ColorType, PIXEL_BYTES};
-use crate::encode::logic::scalar;
+use crate::encode::logic::{scalar, encode_logic_fn};
 use crate::common::logic::x86_64::M256I;
 
 const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit

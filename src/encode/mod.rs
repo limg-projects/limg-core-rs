@@ -1,6 +1,28 @@
+//! このモジュールはエンコード関数を提供します。
+//! 
+//! # Examples
+//! 
+//! ```
+//! use limg_core::encode::{encoded_size, encode, encode_header, encode_data};
+//! use limg_core::spec::ImageSpec;
+//! use limg_core::pixel::ColorType;
+//! 
+//! let data = [255, 255, 255];
+//! let spec = ImageSpec::new(1, 1);
+//! let mut buf_1 = vec![0u8; encoded_size(&spec)];
+//! let mut buf_2 = vec![0u8; encoded_size(&spec)];
+//! 
+//! encode(&data, &mut buf_1, &spec, ColorType::Rgb888).unwrap();
+//! 
+//! let written_header_size = encode_header(&mut buf_2, &spec).unwrap();
+//! encode_data(&data, &mut buf_2[written_header_size..], &spec, ColorType::Rgb888).unwrap();
+//! 
+//! assert_eq!(buf_1, buf_2);
+//! ```
+
 mod logic;
 
-use crate::common::header::{ImageHeader, IMAGE_CURRENT_VARSION, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::common::header::{ImageHeader, CURRENT_VARSION, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
@@ -23,9 +45,35 @@ use crate::error::{Error, Result};
 /// ```
 #[inline(always)]
 pub const fn encoded_size(spec: &ImageSpec) -> usize {
-    IMAGE_HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
+    HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
+/// ImageSpecとColorTypeから、Limg形式データをバッファに書き込みます。
+/// 
+/// エラーで無かった場合、書き込まれたバイト数を返します。
+/// 
+/// # Errors
+/// spec.widthかspec.heightが0の場合、Error::ZeroImageDimensionsを返します。
+/// dataバッファの長さが入力として足りない場合、Error::InputBufferTooSmallを返します。
+/// bufバッファの長さがLimg形式データ書き込みサイズに満たない場合、Error::OutputBufferTooSmallを返します。
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::encode::{encoded_size, encode};
+/// use limg_core::spec::ImageSpec;
+/// use limg_core::pixel::ColorType;
+/// 
+/// fn main() -> limg_core::Result<()> {
+///     let data = [255, 255, 255];
+///     let spec = ImageSpec::new(1, 1);
+///     let mut buf = vec![0u8; encoded_size(&spec)];
+/// 
+///     let written_size = encode(&data, &mut buf, &spec, ColorType::Rgb888)?;
+///     assert_eq!(written_size, encoded_size(&spec));
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
     let num_pixels = spec.width as usize * spec.height as usize;
@@ -36,15 +84,15 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
     if data.len() < color_type.bytes_per_pixel() * num_pixels {
         return Err(Error::InputBufferTooSmall);
     }
-    if buf.len() < IMAGE_HEADER_SIZE + PIXEL_BYTES * num_pixels {
+    if buf.len() < HEADER_SIZE + PIXEL_BYTES * num_pixels {
         return Err(Error::OutputBufferTooSmall);
     }
 
     let mut written_size = 0;
 
     unsafe {
-        written_size += encode_header_unchecked(buf.get_unchecked_mut(..IMAGE_HEADER_SIZE), spec);
-        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(IMAGE_HEADER_SIZE..), spec, color_type);
+        written_size += encode_header_unchecked(buf.get_unchecked_mut(..HEADER_SIZE), spec);
+        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(HEADER_SIZE..), spec, color_type);
     }
 
     debug_assert_eq!(written_size, encoded_size(spec));
@@ -52,6 +100,31 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
     Ok(written_size)
 }
 
+/// ImageSpecからヘッダをエンコードし、バッファに書き込みます。
+/// 
+/// エラーで無かった場合、書き込まれたバイト数を返します。
+/// 
+/// # Errors
+/// 
+/// spec.widthかspec.heightが0の場合、Error::ZeroImageDimensionsを返します。
+/// bufバッファの長さがヘッダー書き込みサイズに満たない場合、Error::OutputBufferTooSmallを返します。
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::HEADER_SIZE;
+/// use limg_core::encode::encode_header;
+/// use limg_core::spec::ImageSpec;
+/// 
+/// fn main() -> limg_core::Result<()> {
+///     let spec = ImageSpec::new(1, 1);
+///     let mut buf = vec![0u8; HEADER_SIZE];
+/// 
+///     let written_size = encode_header(&mut buf, &spec)?;
+///     assert_eq!(written_size, HEADER_SIZE);
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
     let num_pixel = spec.width as usize * spec.height as usize;
@@ -60,7 +133,7 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
         return Err(Error::ZeroImageDimensions);
     }
 
-    if buf.len() < IMAGE_HEADER_SIZE {
+    if buf.len() < HEADER_SIZE {
         return Err(Error::OutputBufferTooSmall);
     }
 
@@ -71,7 +144,7 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
 
 unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     let use_transparent = match spec.transparent_color {
-        Some(_) => IMAGE_FLAG_USE_TRANSPARENT_BIT,
+        Some(_) => FLAG_USE_TRANSPARENT_BIT,
         None => 0,
     };
     
@@ -79,8 +152,8 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
         (use_transparent);
 
     let header = ImageHeader {
-        signature: IMAGE_SIGNATURE_U32_NE,
-        version: IMAGE_CURRENT_VARSION,
+        signature: SIGNATURE_U32_NE,
+        version: CURRENT_VARSION,
         flag,
         width: spec.width.to_le(),
         height: spec.height.to_le(),
@@ -91,9 +164,35 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 
     unsafe { header_ptr.write_unaligned(header); }
 
-    IMAGE_HEADER_SIZE
+    HEADER_SIZE
 }
 
+/// ImageSpecとColorTypeから、色データをエンコードしバッファに書き込みます。
+/// 
+/// エラーで無かった場合、書き込まれたバイト数を返します。
+/// 
+/// # Errors
+/// 
+/// dataバッファの長さが入力として足りない場合、Error::InputBufferTooSmallを返します。
+/// bufバッファの長さがデータ書き込みサイズに満たない場合、Error::OutputBufferTooSmallを返します。
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::encode::encode_data;
+/// use limg_core::spec::ImageSpec;
+/// use limg_core::pixel::{ColorType, PIXEL_BYTES};
+/// 
+/// fn main() -> limg_core::Result<()> {
+///     let data = [255, 255, 255];
+///     let spec = ImageSpec::new(1, 1);
+///     let mut buf = vec![0u8; PIXEL_BYTES * spec.num_pixels()];
+/// 
+///     let written_size = encode_data(&data, &mut buf, &spec, ColorType::Rgb888)?;
+///     assert_eq!(written_size, PIXEL_BYTES * spec.num_pixels());
+///     Ok(())
+/// }
+/// ```
 #[inline]
 pub fn encode_data(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
     let num_pixels = spec.num_pixels();

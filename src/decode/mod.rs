@@ -1,6 +1,6 @@
 mod logic;
 
-use crate::common::header::{ImageHeader, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::common::header::{ImageHeader, FLAG_ENDIAN_BIT, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
@@ -16,14 +16,14 @@ pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(Ima
 }
 
 pub fn decode_header(data: &[u8]) -> Result<(ImageSpec, usize)> {
-    if data.len() < IMAGE_HEADER_SIZE {
+    if data.len() < HEADER_SIZE {
         return Err(Error::InputBufferTooSmall);
     }
 
     let header_ptr = data.as_ptr().cast::<ImageHeader>();
     let header = unsafe { header_ptr.read_unaligned() };
 
-    if header.signature != IMAGE_SIGNATURE_U32_NE {
+    if header.signature != SIGNATURE_U32_NE {
         return Err(Error::UnsupportedFormat);
     }
 
@@ -32,8 +32,8 @@ pub fn decode_header(data: &[u8]) -> Result<(ImageSpec, usize)> {
         return Err(Error::UnsupportedFormat);
     }
 
-    let transparent_color = if (header.flag & IMAGE_FLAG_USE_TRANSPARENT_BIT) != 0 { Some(header.transparent_color) } else { None };
-    let data_endian = unsafe { ::core::mem::transmute(header.flag & IMAGE_FLAG_ENDIAN_BIT) };
+    let transparent_color = if (header.flag & FLAG_USE_TRANSPARENT_BIT) != 0 { Some(header.transparent_color) } else { None };
+    let data_endian = unsafe { ::core::mem::transmute(header.flag & FLAG_ENDIAN_BIT) };
 
     let spec = ImageSpec {
         width: u16::from_le(header.width),
@@ -42,7 +42,7 @@ pub fn decode_header(data: &[u8]) -> Result<(ImageSpec, usize)> {
         data_endian
     };
 
-    Ok((spec, IMAGE_HEADER_SIZE))
+    Ok((spec, HEADER_SIZE))
 }
 
 #[inline]

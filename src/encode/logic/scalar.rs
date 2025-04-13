@@ -1,4 +1,5 @@
-use crate::{encode_logic_fn, pixel::{rgb_to_pixel, ColorType, PIXEL_BYTES}};
+use crate::pixel::{rgb_to_pixel, ColorType, PIXEL_BYTES};
+use crate::encode::logic::encode_logic_fn;
 
 #[inline(always)]
 pub unsafe fn encode_from_rgb565_direct(data: *const u8, buf: *mut u8, num_pixels: usize) {
