@@ -3,10 +3,41 @@ mod scalar;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86_64;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub use x86_64::*;
+pub use x86_64::encode_logic;
 
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-pub use scalar::*;
+pub use scalar::encode_logic;
+
+#[macro_export(local_inner_macros)]
+macro_rules! encode_logic_fn {
+    ($(#[$attr:meta])*) => {
+
+      #[inline(never)]
+      $(#[$attr])*
+      pub unsafe fn encode_logic(data: *const u8, buf: *mut u8, num_pixels: usize, data_endian: crate::spec::DataEndian, color_type: crate::pixel::ColorType) -> usize {
+        unsafe {
+			match data_endian {
+				crate::spec::DataEndian::Big => {
+					match color_type {
+						crate::pixel::ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
+						crate::pixel::ColorType::Rgb565 => encode_from_rgb565_be(data, buf, num_pixels),
+						crate::pixel::ColorType::Rgba8888 => encode_from_rgba8888_be(data, buf, num_pixels),
+					}
+				},
+				crate::spec::DataEndian::Little => {
+					match color_type {
+						crate::pixel::ColorType::Rgb888 => encode_from_rgb888_le(data, buf, num_pixels),
+						crate::pixel::ColorType::Rgb565 => encode_from_rgb565_le(data, buf, num_pixels),
+						crate::pixel::ColorType::Rgba8888 => encode_from_rgba8888_le(data, buf, num_pixels),
+					}
+				},
+			}
+        }
+    
+        crate::pixel::PIXEL_BYTES * color_type.bytes_per_pixel()
+    }
+  };
+}
 
 #[cfg(test)]
 mod tests {

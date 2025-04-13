@@ -5,12 +5,6 @@ use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
-use logic::{
-    encode_from_rgb888_be,   encode_from_rgb888_le,
-    encode_from_rgb565_be,   encode_from_rgb565_le,
-    encode_from_rgba8888_be, encode_from_rgba8888_le,
-};
-
 /// Calculates the total number of bytes needed to encode an image with the given specification.
 ///
 /// This includes both the image header and the pixel data region.
@@ -106,28 +100,7 @@ pub fn encode_data(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: 
     }
 }
 
-pub unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> usize {
-    let data = data.as_ptr();
-    let buf = buf.as_mut_ptr();
-
-    unsafe {
-        match data_endian {
-            DataEndian::Big => {
-                match color_type {
-                    ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
-                    ColorType::Rgb565 => encode_from_rgb565_be(data, buf, num_pixels),
-                    ColorType::Rgba8888 => encode_from_rgba8888_be(data, buf, num_pixels),
-                }
-            },
-            DataEndian::Little => {
-                match color_type {
-                    ColorType::Rgb888 => encode_from_rgb888_le(data, buf, num_pixels),
-                    ColorType::Rgb565 => encode_from_rgb565_le(data, buf, num_pixels),
-                    ColorType::Rgba8888 => encode_from_rgba8888_le(data, buf, num_pixels),
-                }
-            },
-        }
-    }
-
-    PIXEL_BYTES * color_type.bytes_per_pixel()
+#[inline(always)]
+unsafe fn encode_data_unchecked(data: &[u8], buf: &mut [u8], num_pixels: usize, data_endian: DataEndian, color_type: ColorType) -> usize {
+    unsafe { logic::encode_logic(data.as_ptr(), buf.as_mut_ptr(), num_pixels, data_endian, color_type) }
 }
