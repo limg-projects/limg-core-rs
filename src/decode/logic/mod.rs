@@ -8,7 +8,6 @@ pub use x86_64::decode_logic;
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
 pub use scalar::decode_logic;
 
-#[macro_export(local_inner_macros)]
 macro_rules! decode_logic_fn {
     ($(#[$attr:meta])*) => {
 
@@ -52,6 +51,8 @@ macro_rules! decode_logic_fn {
         }
     };
 }
+
+pub(crate) use decode_logic_fn;
 
 #[cfg(test)]
 mod tests {

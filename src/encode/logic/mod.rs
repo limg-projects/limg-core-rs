@@ -8,7 +8,6 @@ pub use x86_64::encode_logic;
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
 pub use scalar::encode_logic;
 
-#[macro_export(local_inner_macros)]
 macro_rules! encode_logic_fn {
     ($(#[$attr:meta])*) => {
 
@@ -40,6 +39,8 @@ macro_rules! encode_logic_fn {
     }
   };
 }
+
+pub(crate) use encode_logic_fn;
 
 #[cfg(test)]
 mod tests {
