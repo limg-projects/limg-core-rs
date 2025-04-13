@@ -178,6 +178,18 @@ impl M256I {
 
     #[inline]
     #[target_feature(enable = "avx")]
+    pub unsafe fn setzero_si256() -> M256I {
+        M256I(_mm256_setzero_si256())
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx")]
+    pub unsafe fn set_epi32(e0: i32, e1: i32, e2: i32, e3: i32, e4: i32, e5: i32, e6: i32, e7: i32) -> M256I {
+        M256I(_mm256_set_epi32(e0, e1, e2, e3, e4, e5, e6, e7))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx")]
     pub unsafe fn set1_epi16(a: i16) -> M256I {
         M256I(_mm256_set1_epi16(a))
     }
@@ -232,6 +244,12 @@ impl M256I {
 
     #[inline]
     #[target_feature(enable = "avx2")]
+    pub unsafe fn blend_epi32<const IMM8: i32>(self, a: M256I) -> M256I {
+        M256I(_mm256_blend_epi32::<IMM8>(self.0, a.0))
+    }
+
+    #[inline]
+    #[target_feature(enable = "avx2")]
     pub unsafe fn shuffle_epi8(self, a: M256I) -> M256I {
         M256I(_mm256_shuffle_epi8(self.0, a.0))
     }
@@ -248,7 +266,20 @@ impl M256I {
         M256I(_mm256_permute4x64_epi64::<IMM8>(self.0))
     }
 
+    #[inline]
+    #[target_feature(enable = "avx2")]
+    pub unsafe fn permutevar8x32_epi32(self, a: M256I) -> M256I {
+        M256I(_mm256_permutevar8x32_epi32(self.0, a.0))
+    }
+
     // ---- 追加関数 ----
+
+    #[inline(always)]
+    pub const unsafe fn const_i32<
+        const E00: i32, const E01: i32, const E02: i32, const E03: i32, const E04: i32, const E05: i32, const E06: i32, const E07: i32,
+        >() -> M256I {
+        M256I(transmute([E00, E01, E02, E03, E04, E05, E06, E07]))
+    }
 
     #[inline(always)]
     pub const unsafe fn const_i8<
@@ -256,6 +287,21 @@ impl M256I {
         const E08: i8, const E09: i8, const E10: i8, const E11: i8, const E12: i8, const E13: i8, const E14: i8, const E15: i8,
         const E16: i8, const E17: i8, const E18: i8, const E19: i8, const E20: i8, const E21: i8, const E22: i8, const E23: i8,
         const E24: i8, const E25: i8, const E26: i8, const E27: i8, const E28: i8, const E29: i8, const E30: i8, const E31: i8
+        >() -> M256I {
+        M256I(transmute([
+            E00, E01, E02, E03, E04, E05, E06, E07,
+            E08, E09, E10, E11, E12, E13, E14, E15,
+            E16, E17, E18, E19, E20, E21, E22, E23,
+            E24, E25, E26, E27, E28, E29, E30, E31
+        ]))
+    }
+
+    #[inline(always)]
+    pub const unsafe fn const_u8<
+        const E00: u8, const E01: u8, const E02: u8, const E03: u8, const E04: u8, const E05: u8, const E06: u8, const E07: u8,
+        const E08: u8, const E09: u8, const E10: u8, const E11: u8, const E12: u8, const E13: u8, const E14: u8, const E15: u8,
+        const E16: u8, const E17: u8, const E18: u8, const E19: u8, const E20: u8, const E21: u8, const E22: u8, const E23: u8,
+        const E24: u8, const E25: u8, const E26: u8, const E27: u8, const E28: u8, const E29: u8, const E30: u8, const E31: u8
         >() -> M256I {
         M256I(transmute([
             E00, E01, E02, E03, E04, E05, E06, E07,
