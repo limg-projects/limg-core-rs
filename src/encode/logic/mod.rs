@@ -41,7 +41,7 @@ macro_rules! encode_logic_fn {
 
 #[cfg(test)]
 mod tests {
-    use crate::rgb_to_pixel;
+    use crate::pixel::rgb_to_pixel;
 
     pub const NUM_PIXELS: usize = 20;
 

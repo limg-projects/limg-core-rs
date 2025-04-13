@@ -159,7 +159,7 @@ encode_from_endian!("little", le_epi16, encode_from_rgb888_le, encode_from_rgb56
 #[cfg(test)]
 mod tests {
     use crate::encode::logic::scalar;
-    use crate::{ColorType, PIXEL_BYTES};
+    use crate::pixel::{ColorType, PIXEL_BYTES};
     use crate::spec::DataEndian;
 
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};

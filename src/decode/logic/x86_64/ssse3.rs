@@ -386,7 +386,7 @@ mod tests {
         let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
         let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
 
-        let transparent_color = crate::rgb_to_pixel([255, 255, 255]);
+        let transparent_color = crate::pixel::rgb_to_pixel([255, 255, 255]);
 
         unsafe {
             scalar::decode_to_rgba8888_alpha_be(rgb565_be_ptr, scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);
