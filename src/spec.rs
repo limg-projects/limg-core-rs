@@ -99,25 +99,4 @@ impl ImageSpec {
     pub const fn is_zero_dimensions(&self) -> bool {
         self.width == 0 || self.height == 0
     }
-
-    /// Returns the internal flag value used to encode the data endianness.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use limg_core::spec::{DataEndian, ImageSpec};
-    /// 
-    /// let mut spec = ImageSpec::with_data_endian(100, 100, DataEndian::Little);
-    /// 
-    /// assert!(spec.flag() != 0);
-    /// ```
-    pub const fn flag(&self) -> u8 {
-        let use_transparent = match self.transparent_color {
-            Some(_) => IMAGE_FLAG_USE_TRANSPARENT_BIT,
-            None => 0,
-        };
-        
-        (self.data_endian as u8) |
-        (use_transparent)
-    }
 }

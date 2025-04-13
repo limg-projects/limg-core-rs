@@ -1,7 +1,7 @@
 mod logic;
 
-use crate::common::header::{ImageHeader, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
-use crate::spec::{DataEndian, ImageSpec};
+use crate::common::header::{ImageHeader, IMAGE_CURRENT_VARSION, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
@@ -70,10 +70,18 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
 }
 
 unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
+    let use_transparent = match spec.transparent_color {
+        Some(_) => IMAGE_FLAG_USE_TRANSPARENT_BIT,
+        None => 0,
+    };
+    
+    let flag = (spec.data_endian as u8) |
+        (use_transparent);
+
     let header = ImageHeader {
         signature: IMAGE_SIGNATURE_U32_NE,
         version: IMAGE_CURRENT_VARSION,
-        flag: spec.flag(),
+        flag,
         width: spec.width.to_le(),
         height: spec.height.to_le(),
         transparent_color: spec.transparent_color.unwrap_or(0).to_le(),
