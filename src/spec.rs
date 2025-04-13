@@ -1,4 +1,4 @@
-use crate::header::IMAGE_FLAG_USE_TRANSPARENT_BIT;
+use crate::common::header::IMAGE_FLAG_USE_TRANSPARENT_BIT;
 
 /// Represents the byte order (endianness) used for pixel data in the image format.
 #[repr(u8)]

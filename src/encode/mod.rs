@@ -1,6 +1,6 @@
 mod logic;
 
-use crate::header::{ImageHeaderInternal, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::common::header::{ImageHeader, IMAGE_CURRENT_VARSION, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
@@ -75,7 +75,7 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
 }
 
 unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
-    let header = ImageHeaderInternal {
+    let header = ImageHeader {
         signature: IMAGE_SIGNATURE_U32_NE,
         version: IMAGE_CURRENT_VARSION,
         flag: spec.flag(),
@@ -84,11 +84,9 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
         transparent_color: spec.transparent_color.unwrap_or(0).to_le(),
     };
 
-    let header_ptr = (&header as *const ImageHeaderInternal).cast::<u8>();
+    let header_ptr = buf.as_mut_ptr().cast::<ImageHeader>();
 
-    unsafe {
-        ::core::ptr::copy_nonoverlapping(header_ptr, buf.as_mut_ptr(), IMAGE_HEADER_SIZE);
-    }
+    unsafe { header_ptr.write_unaligned(header); }
 
     IMAGE_HEADER_SIZE
 }

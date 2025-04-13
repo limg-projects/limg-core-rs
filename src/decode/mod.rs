@@ -1,6 +1,6 @@
 mod logic;
 
-use crate::header::{ImageHeaderInternal, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::common::header::{ImageHeader, IMAGE_FLAG_ENDIAN_BIT, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
 use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
@@ -27,7 +27,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
         return Err(Error::InputBufferTooSmall);
     }
 
-    let header_ptr = data.as_ptr().cast::<ImageHeaderInternal>();
+    let header_ptr = data.as_ptr().cast::<ImageHeader>();
     let header = unsafe { header_ptr.read_unaligned() };
 
     if header.signature != IMAGE_SIGNATURE_U32_NE {

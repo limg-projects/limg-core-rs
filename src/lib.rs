@@ -1,6 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 
-mod header;
 mod spec;
 mod pixel;
 mod encode;
@@ -8,7 +7,6 @@ mod decode;
 mod error;
 mod common;
 
-pub use crate::header::{IMAGE_SIGNATURE, IMAGE_HEADER_SIZE, IMAGE_CURRENT_VARSION, IMAGE_FLAG_ENDIAN_BIT, ImageHeader};
 pub use crate::spec::{DataEndian, ImageSpec};
 pub use crate::pixel::*;
 pub use encode::*;
