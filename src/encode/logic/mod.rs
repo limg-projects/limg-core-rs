@@ -36,7 +36,7 @@ macro_rules! encode_logic_fn {
 			}
         }
     
-        crate::pixel::PIXEL_BYTES * color_type.bytes_per_pixel()
+        crate::pixel::PIXEL_BYTES * num_pixels
     }
   };
 }

@@ -7,15 +7,15 @@ use crate::error::{Error, Result};
 
 #[inline]
 pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let spec = decode_header(data)?;
+    let (spec, header_read_size) = decode_header(data)?;
 
-    let data = unsafe { data.get_unchecked(IMAGE_HEADER_SIZE..) };
+    let data = unsafe { data.get_unchecked(header_read_size..) };
     let written_size = decode_data(data, buf, &spec, color_type)?;
 
     Ok((spec, written_size))
 }
 
-pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
+pub fn decode_header(data: &[u8]) -> Result<(ImageSpec, usize)> {
     if data.len() < IMAGE_HEADER_SIZE {
         return Err(Error::InputBufferTooSmall);
     }
@@ -35,12 +35,14 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
     let transparent_color = if (header.flag & IMAGE_FLAG_USE_TRANSPARENT_BIT) != 0 { Some(header.transparent_color) } else { None };
     let data_endian = unsafe { ::core::mem::transmute(header.flag & IMAGE_FLAG_ENDIAN_BIT) };
 
-    Ok(ImageSpec {
+    let spec = ImageSpec {
         width: u16::from_le(header.width),
         height: u16::from_le(header.height),
         transparent_color,
         data_endian
-    })
+    };
+
+    Ok((spec, IMAGE_HEADER_SIZE))
 }
 
 #[inline]
