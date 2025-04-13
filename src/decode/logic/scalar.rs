@@ -27,7 +27,7 @@ pub unsafe fn decode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels:
 }
 
 macro_rules! decode_endian {
-    ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident, $rgba8888_aplha: ident) => {
+    ($endian: expr, $endian_fn: ident, $rgb888: ident, $rgb565: ident, $rgba8888: ident, $rgba8888_alpha: ident) => {
         #[inline(always)]
         pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
@@ -75,7 +75,7 @@ macro_rules! decode_endian {
         }
 
         #[inline(always)]
-        pub unsafe fn $rgba8888_aplha(data: *const u8, buf: *mut u8, transparent_color: u16, num_pixels: usize) {
+        pub unsafe fn $rgba8888_alpha(data: *const u8, buf: *mut u8, transparent_color: u16, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
         
             let mut data = data.cast::<u16>();
