@@ -16,9 +16,9 @@ pub unsafe fn encode_from_rgb565_swap(data: *const u8, buf: *mut u8, num_pixels:
     let remainder = num_pixels % PIXEL_BLOCK_LEN;
 
     for _ in 0..pixel_blocks {
-        let src = M128I::loadu_si128(data.cast::<M128I>()).swap_epi16();
+        let pixel = M128I::loadu_si128(data.cast::<M128I>()).swap_epi16();
 
-        src.storeu_si128(buf.cast::<M128I>());
+        pixel.storeu_si128(buf.cast::<M128I>());
         
         data = data.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
         buf = buf.add(PIXEL_BLOCK_LEN * PIXEL_BYTES);
@@ -36,13 +36,13 @@ macro_rules! encode_from_endian {
         pub unsafe fn $rgb888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgb888;
         
-            const R_MASK_1: M128I = unsafe { M128I::new_i8(0, -1, 3, -1, 6, -1,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const G_MASK_1: M128I = unsafe { M128I::new_i8(1, -1, 4, -1, 7, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const B_MASK_1: M128I = unsafe { M128I::new_i8(2, -1, 5, -1, 8, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const R_MASK_1: M128I = unsafe { M128I::const_i8::<0, -1, 3, -1, 6, -1,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const G_MASK_1: M128I = unsafe { M128I::const_i8::<1, -1, 4, -1, 7, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const B_MASK_1: M128I = unsafe { M128I::const_i8::<2, -1, 5, -1, 8, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
         
-            const R_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 3, -1, 6, -1,  9, -1) };
-            const G_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 4, -1, 7, -1, 10, -1) };
-            const B_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 5, -1, 8, -1, 11, -1) };
+            const R_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 3, -1, 6, -1,  9, -1>() };
+            const G_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 4, -1, 7, -1, 10, -1>() };
+            const B_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 5, -1, 8, -1, 11, -1>() };
 
             // バッファオーバーしないための後ピクセルを加味する
             if num_pixels < PIXEL_BLOCK_LEN + 2 {
@@ -106,13 +106,13 @@ macro_rules! encode_from_endian {
         pub unsafe fn $rgba8888(data: *const u8, buf: *mut u8, num_pixels: usize) {
             const COLOR_TYPE: ColorType = ColorType::Rgba8888;
         
-            const R_MASK_1: M128I = unsafe { M128I::new_i8(0, -1, 4, -1, 8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const G_MASK_1: M128I = unsafe { M128I::new_i8(1, -1, 5, -1, 9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
-            const B_MASK_1: M128I = unsafe { M128I::new_i8(2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1) };
+            const R_MASK_1: M128I = unsafe { M128I::const_i8::<0, -1, 4, -1,  8, -1, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const G_MASK_1: M128I = unsafe { M128I::const_i8::<1, -1, 5, -1,  9, -1, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
+            const B_MASK_1: M128I = unsafe { M128I::const_i8::<2, -1, 6, -1, 10, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1>() };
         
-            const R_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1, 8, -1, 12, -1) };
-            const G_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1, 9, -1, 13, -1) };
-            const B_MASK_2: M128I = unsafe { M128I::new_i8(-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1) };
+            const R_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 4, -1,  8, -1, 12, -1>() };
+            const G_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, 5, -1,  9, -1, 13, -1>() };
+            const B_MASK_2: M128I = unsafe { M128I::const_i8::<-1, -1, -1, -1, -1, -1, -1, -1, 2, -1, 6, -1, 10, -1, 14, -1>() };
         
             let mut data = data;
             let mut buf = buf;
@@ -162,82 +162,82 @@ mod tests {
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
-    fn encode_rgb888_x86_64_sse41() {
+    fn encode_rgb888_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
         
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
             scalar::encode_from_rgb888_be(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_be(RGB888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgb888_le(RGB888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb888_le(RGB888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
-    fn encode_rgb565_x86_64_sse41() {
+    fn encode_rgb565_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         let data_ptr = (&RGB565_DATA as *const u16).cast::<u8>();
         let data = unsafe { ::core::slice::from_raw_parts(data_ptr, NUM_PIXELS * PIXEL_BYTES) };
 
         unsafe {
             scalar::encode_from_rgb565_be(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb565_be(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_be(data.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgb565_le(data.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgb565_le(data.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgb565_le(data.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
-    fn encode_rgba8888_x86_64_sse41() {
+    fn encode_rgba8888_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
 
         let mut scalar_buf = [0; NUM_PIXELS * PIXEL_BYTES];
-        let mut sse41_buf = [0; NUM_PIXELS * PIXEL_BYTES];
+        let mut simd_buf = [0; NUM_PIXELS * PIXEL_BYTES];
 
         unsafe {
             scalar::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_be(RGBA8888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
 
         unsafe {
             scalar::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), scalar_buf.as_mut_ptr(), NUM_PIXELS);
-            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), sse41_buf.as_mut_ptr(), NUM_PIXELS);
+            super::encode_from_rgba8888_le(RGBA8888_DATA.as_ptr(), simd_buf.as_mut_ptr(), NUM_PIXELS);
         }
 
-        assert_eq!(scalar_buf, sse41_buf);
+        assert_eq!(scalar_buf, simd_buf);
     }
 
     #[test]
-    fn encode_endian_x86_64_sse41() {
+    fn encode_endian_x86_64_ssse3() {
         if !is_x86_feature_detected!("ssse3") {
             return;
         }
