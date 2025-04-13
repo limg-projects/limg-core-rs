@@ -1,6 +1,6 @@
 mod logic;
 
-use crate::common::header::{ImageHeader, IMAGE_CURRENT_VARSION, IMAGE_FLAG_USE_TRANSPARENT_BIT, IMAGE_HEADER_SIZE, IMAGE_SIGNATURE_U32_NE};
+use crate::common::header::{ImageHeader, CURRENT_VARSION, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
@@ -23,7 +23,7 @@ use crate::error::{Error, Result};
 /// ```
 #[inline(always)]
 pub const fn encoded_size(spec: &ImageSpec) -> usize {
-    IMAGE_HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
+    HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
 #[inline]
@@ -36,15 +36,15 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
     if data.len() < color_type.bytes_per_pixel() * num_pixels {
         return Err(Error::InputBufferTooSmall);
     }
-    if buf.len() < IMAGE_HEADER_SIZE + PIXEL_BYTES * num_pixels {
+    if buf.len() < HEADER_SIZE + PIXEL_BYTES * num_pixels {
         return Err(Error::OutputBufferTooSmall);
     }
 
     let mut written_size = 0;
 
     unsafe {
-        written_size += encode_header_unchecked(buf.get_unchecked_mut(..IMAGE_HEADER_SIZE), spec);
-        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(IMAGE_HEADER_SIZE..), spec, color_type);
+        written_size += encode_header_unchecked(buf.get_unchecked_mut(..HEADER_SIZE), spec);
+        written_size += encode_data_unchecked(data, buf.get_unchecked_mut(HEADER_SIZE..), spec, color_type);
     }
 
     debug_assert_eq!(written_size, encoded_size(spec));
@@ -60,7 +60,7 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
         return Err(Error::ZeroImageDimensions);
     }
 
-    if buf.len() < IMAGE_HEADER_SIZE {
+    if buf.len() < HEADER_SIZE {
         return Err(Error::OutputBufferTooSmall);
     }
 
@@ -71,7 +71,7 @@ pub fn encode_header(buf: &mut [u8], spec: &ImageSpec) -> Result<usize> {
 
 unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     let use_transparent = match spec.transparent_color {
-        Some(_) => IMAGE_FLAG_USE_TRANSPARENT_BIT,
+        Some(_) => FLAG_USE_TRANSPARENT_BIT,
         None => 0,
     };
     
@@ -79,8 +79,8 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
         (use_transparent);
 
     let header = ImageHeader {
-        signature: IMAGE_SIGNATURE_U32_NE,
-        version: IMAGE_CURRENT_VARSION,
+        signature: SIGNATURE_U32_NE,
+        version: CURRENT_VARSION,
         flag,
         width: spec.width.to_le(),
         height: spec.height.to_le(),
@@ -91,7 +91,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 
     unsafe { header_ptr.write_unaligned(header); }
 
-    IMAGE_HEADER_SIZE
+    HEADER_SIZE
 }
 
 #[inline]
