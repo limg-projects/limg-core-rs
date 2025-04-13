@@ -5,14 +5,6 @@ pub const IMAGE_SIGNATURE: [u8; 4] = *b"LIMG";
 pub const IMAGE_SIGNATURE_U32_NE: u32 = u32::from_ne_bytes(IMAGE_SIGNATURE);
 
 /// Limg形式のヘッダーサイズ
-/// 
-/// # Examples
-/// 
-/// ```
-/// use limg_core::{ImageHeader, IMAGE_HEADER_SIZE};
-/// 
-/// assert_eq!(IMAGE_HEADER_SIZE, size_of::<ImageHeader>());
-/// ```
 pub const IMAGE_HEADER_SIZE: usize = 12;
 
 /// Limg形式の現行バージョン

@@ -5,16 +5,17 @@ use crate::spec::{DataEndian, ImageSpec};
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
-/// Calculates the total number of bytes needed to encode an image with the given specification.
+/// ImageSpecからエンコードに必要なバイト数を取得します
 ///
-/// This includes both the image header and the pixel data region.
+/// このサイズにはヘッダーとデータ部の合計です
 /// 
 /// # Examples
 /// 
 /// ```
-/// use limg_core::{ImageSpec, encoded_size, rgb_to_pixel};
+/// use limg_core::encode::encoded_size;
+/// use limg_core::spec::ImageSpec;
 /// 
-/// let spec = ImageSpec::new(100, 100, rgb_to_pixel([0, 0, 0]));
+/// let spec = ImageSpec::new(100, 100);
 /// let bounds = encoded_size(&spec);
 /// 
 /// // HeaderSize(12) + width(100) * height(100) * PixelSize(2)
