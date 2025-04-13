@@ -3,11 +3,55 @@ mod scalar;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86_64;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub use x86_64::*;
+pub use x86_64::decode_logic;
 
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-pub use scalar::*;
+pub use scalar::decode_logic;
 
+#[macro_export(local_inner_macros)]
+macro_rules! decode_logic_fn {
+    ($(#[$attr:meta])*) => {
+
+        #[inline(never)]
+        $(#[$attr])*
+        pub unsafe fn decode_logic(data: *const u8, buf: *mut u8, spec: &crate::spec::ImageSpec, color_type: crate::pixel::ColorType) -> usize {
+            let num_pixels = spec.num_pixels();
+        
+            unsafe {
+                match spec.data_endian {
+                    crate::spec::DataEndian::Big => {
+                        match color_type {
+                            crate::pixel::ColorType::Rgb888 => decode_to_rgb888_be(data, buf, num_pixels),
+                            crate::pixel::ColorType::Rgb565 => decode_to_rgb565_be(data, buf, num_pixels),
+                            crate::pixel::ColorType::Rgba8888 => {
+                                if let Some(transparent_color) = spec.transparent_color {
+                                    decode_to_rgba8888_alpha_be(data, buf, transparent_color, num_pixels)
+                                } else {
+                                    decode_to_rgba8888_be(data, buf, num_pixels)
+                                }
+                            }
+                        }
+                    },
+                    crate::spec::DataEndian::Little => {
+                        match color_type {
+                            crate::pixel::ColorType::Rgb888 => decode_to_rgb888_le(data, buf, num_pixels),
+                            crate::pixel::ColorType::Rgb565 => decode_to_rgb565_le(data, buf, num_pixels),
+                            crate::pixel::ColorType::Rgba8888 => {
+                                if let Some(transparent_color) = spec.transparent_color {
+                                    decode_to_rgba8888_alpha_le(data, buf, transparent_color, num_pixels)
+                                } else {
+                                    decode_to_rgba8888_le(data, buf, num_pixels)
+                                }
+                            }
+                        }
+                    },
+                }
+            }
+            
+            color_type.bytes_per_pixel() * num_pixels
+        }
+    };
+}
 
 #[cfg(test)]
 mod tests {
