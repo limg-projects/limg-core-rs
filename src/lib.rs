@@ -8,3 +8,4 @@ pub mod decode;
 mod error;
 
 pub use error::{Result, Error};
+pub use common::header::{HEADER_SIZE, CURRENT_VARSION};
