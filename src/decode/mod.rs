@@ -7,7 +7,7 @@ use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
-/// `data`バッファからLimg形式データをデコードし、`buf`バッファに書き込みます。
+/// `data`バッファと`ColorType`からLimg形式データをデコードし、`buf`バッファに書き込みます。
 /// 
 /// エラーではなかった場合、`ImageSpec`と書き込まれたバイト数を返します。
 /// 
