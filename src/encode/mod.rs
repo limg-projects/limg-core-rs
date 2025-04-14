@@ -28,7 +28,7 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
     HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
-/// `spec`と`color_type`、`data`からLimg形式データをエンコードし、`buf`に書き込みます。
+/// `data`と`spec`、`color_type`からLimg形式データをエンコードし、`buf`に書き込みます。
 /// 
 /// エラーではなかった場合、書き込まれたバイト数を返します。
 /// 
@@ -154,7 +154,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     HEADER_SIZE
 }
 
-/// `spec`と`color_type`、`data`から色データをエンコードし、`buf`に書き込みます。
+/// `data`と`spec`、`color_type`から色データをエンコードし、`buf`に書き込みます。
 /// 
 /// エラーではなかった場合、書き込まれたバイト数を返します。
 /// 

@@ -7,7 +7,7 @@ use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
-/// `data`バッファと`ColorType`からLimg形式データをデコードし、`buf`バッファに書き込みます。
+/// `data`と`color_type`からLimg形式データをデコードし、`buf`バッファに書き込みます。
 /// 
 /// エラーではなかった場合、`ImageSpec`と書き込まれたバイト数を返します。
 /// 
@@ -15,7 +15,7 @@ use crate::error::{Error, Result};
 /// 
 /// `data`の長さが（[`HEADER_SIZE`] + [`PIXEL_BYTES`] * 総ピクセル数）未満の場合、`Error::InputBufferTooSmall`を返します。
 /// 
-/// ヘッダーが不正なデータだった場合、`Error::UnsupportedFormat`を返します。
+/// ヘッダが不正なデータだった場合、`Error::UnsupportedFormat`を返します。
 /// 
 /// `buf`の長さが（色バイト数 * 総ピクセル数）未満の場合、`Error::OutputBufferTooSmall`を返します。
 /// 
@@ -43,7 +43,7 @@ pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(Ima
     Ok((spec, written_size))
 }
 
-/// `data`バッファからヘッダをデコードし、`ImageSpec`を取得します。
+/// `data`からヘッダをデコードし、`ImageSpec`を取得します。
 /// 
 /// エラーではなかった場合、`ImageSpec`を返します。
 /// 
@@ -51,7 +51,7 @@ pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(Ima
 /// 
 /// `data`の長さが[`HEADER_SIZE`]未満の場合、`Error::InputBuffferTooSmall`を返します。
 /// 
-/// ヘッダーが不正なデータだった場合、`Error::UnsupportedFormat`を返します。
+/// ヘッダが不正なデータだった場合、`Error::UnsupportedFormat`を返します。
 /// 
 /// # Examples
 /// 
@@ -95,7 +95,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
     Ok(spec)
 }
 
-/// `ImageSpec`と`ColorType`から`data`バッファをデコードし、`buf`バッファに書き込みます。
+/// `data`と`spec`、`color_type`から色データをデコードし、`buf`バッファに書き込みます。
 /// 
 /// エラーではなかった場合、書き込まれたバイト数を返します。
 /// 
@@ -105,7 +105,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
 /// 
 /// `buf`の長さが（色バイト数 * 総ピクセル数）未満の場合、`Error::OutputBufferTooSmall`を返します。
 /// 
-/// # Exsamples
+/// # Examples
 /// 
 /// ```rust,no_run
 /// use limg_core::HEADER_SIZE;
