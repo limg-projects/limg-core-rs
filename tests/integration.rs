@@ -1,4 +1,7 @@
-use limg_core::{decode::{decode, decode_data, decode_header}, encode::{encode, encode_data, encode_header, encoded_size}, pixel::ColorType};
+use limg_core::HEADER_SIZE;
+use limg_core::decode::{decode, decode_data, decode_header};
+use limg_core::encode::{encode, encode_data, encode_header, encoded_size};
+use limg_core::pixel::ColorType;
 
 fn encode_decode_test(color_type: ColorType) {
     let mut encode_buf = vec![0u8; 512 * 512 * 4];
@@ -30,10 +33,10 @@ fn encode_decode_header_data_test(color_type: ColorType) {
 
         let data = std::fs::read(path).unwrap();
 
-        let (spec, header_read_size) = decode_header(&data).unwrap();
+        let spec = decode_header(&data).unwrap();
         let mut decode_buf = vec![0u8; color_type.bytes_per_pixel() * spec.num_pixels()];
 
-        let decoded_size = decode_data(&data[header_read_size..], &mut decode_buf, &spec, color_type).unwrap();
+        let decoded_size = decode_data(&data[HEADER_SIZE..], &mut decode_buf, &spec, color_type).unwrap();
 
         let mut encode_buf = vec![0u8; encoded_size(&spec)];
         let mut encoded_size = 0;

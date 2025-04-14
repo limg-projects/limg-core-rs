@@ -1,3 +1,5 @@
+//! このモジュールはデコード関数を提供します。
+
 mod logic;
 
 use crate::common::header::{ImageHeader, FLAG_ENDIAN_BIT, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
@@ -5,17 +7,65 @@ use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
+/// `data`と`color_type`からLimg形式データをデコードし、`buf`バッファに書き込みます。
+/// 
+/// エラーではなかった場合、`ImageSpec`と書き込まれたバイト数を返します。
+/// 
+/// # Errors
+/// 
+/// `data`の長さが（[`HEADER_SIZE`] + [`PIXEL_BYTES`] * 総ピクセル数）未満の場合、`Error::InputBufferTooSmall`を返します。
+/// 
+/// ヘッダが不正なデータだった場合、`Error::UnsupportedFormat`を返します。
+/// 
+/// `buf`の長さが（色バイト数 * 総ピクセル数）未満の場合、`Error::OutputBufferTooSmall`を返します。
+/// 
+/// # Examples
+/// 
+/// ```rust,no_run
+/// use limg_core::decode::decode;
+/// # use limg_core::pixel::ColorType;
+/// 
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let data = std::fs::read("image.limg")?;
+/// # let mut buf = vec![0u8; 0];
+/// # let color_type = ColorType::Rgb888;
+/// let (spec, written_size) = decode(&data, &mut buf, color_type)?;
+/// # Ok(())
+/// # }
+/// ```
 #[inline]
 pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(ImageSpec, usize)> {
-    let (spec, header_read_size) = decode_header(data)?;
+    let spec = decode_header(data)?;
 
-    let data = unsafe { data.get_unchecked(header_read_size..) };
+    let data = unsafe { data.get_unchecked(HEADER_SIZE..) };
     let written_size = decode_data(data, buf, &spec, color_type)?;
 
     Ok((spec, written_size))
 }
 
-pub fn decode_header(data: &[u8]) -> Result<(ImageSpec, usize)> {
+/// `data`からヘッダをデコードし、`ImageSpec`を取得します。
+/// 
+/// エラーではなかった場合、`ImageSpec`を返します。
+/// 
+/// # Errors
+/// 
+/// `data`の長さが[`HEADER_SIZE`]未満の場合、`Error::InputBuffferTooSmall`を返します。
+/// 
+/// ヘッダが不正なデータだった場合、`Error::UnsupportedFormat`を返します。
+/// 
+/// # Examples
+/// 
+/// ```rust,no_run
+/// use limg_core::decode::decode_header;
+/// 
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let data = std::fs::read("image.limg")?;
+/// let spec = decode_header(&data)?;
+/// # Ok(())
+/// # }
+/// ```
+/// 
+pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
     if data.len() < HEADER_SIZE {
         return Err(Error::InputBufferTooSmall);
     }
@@ -42,9 +92,36 @@ pub fn decode_header(data: &[u8]) -> Result<(ImageSpec, usize)> {
         data_endian
     };
 
-    Ok((spec, HEADER_SIZE))
+    Ok(spec)
 }
 
+/// `data`と`spec`、`color_type`から色データをデコードし、`buf`バッファに書き込みます。
+/// 
+/// エラーではなかった場合、書き込まれたバイト数を返します。
+/// 
+/// # Errors
+/// 
+/// `data`の長さが（[`PIXEL_BYTES`] * 総ピクセル数）未満の場合、`Error::InputBufferTooSmall`を返します。
+/// 
+/// `buf`の長さが（色バイト数 * 総ピクセル数）未満の場合、`Error::OutputBufferTooSmall`を返します。
+/// 
+/// # Examples
+/// 
+/// ```rust,no_run
+/// use limg_core::HEADER_SIZE;
+/// use limg_core::decode::{decode_header, decode_data};
+/// # use limg_core::pixel::ColorType;
+/// 
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let data = std::fs::read("image.limg")?;
+/// let spec = decode_header(&data)?;
+/// 
+/// # let color_type = ColorType::Rgb888;
+/// let mut buf = vec![0u8; color_type.bytes_per_pixel() * spec.num_pixels()];
+/// decode_data(&data[HEADER_SIZE..], &mut buf, &spec, color_type)?;
+/// # Ok(())
+/// # }
+/// ```
 #[inline]
 pub fn decode_data(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
     let num_pixels = spec.num_pixels();
