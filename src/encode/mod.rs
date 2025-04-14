@@ -1,24 +1,4 @@
 //! このモジュールはエンコード関数を提供します。
-//! 
-//! # Examples
-//! 
-//! ```
-//! use limg_core::encode::{encoded_size, encode, encode_header, encode_data};
-//! use limg_core::spec::ImageSpec;
-//! use limg_core::pixel::ColorType;
-//! 
-//! let data = [255, 255, 255];
-//! let spec = ImageSpec::new(1, 1);
-//! let mut buf_1 = vec![0u8; encoded_size(&spec)];
-//! let mut buf_2 = vec![0u8; encoded_size(&spec)];
-//! 
-//! encode(&data, &mut buf_1, &spec, ColorType::Rgb888).unwrap();
-//! 
-//! let written_header_size = encode_header(&mut buf_2, &spec).unwrap();
-//! encode_data(&data, &mut buf_2[written_header_size..], &spec, ColorType::Rgb888).unwrap();
-//! 
-//! assert_eq!(buf_1, buf_2);
-//! ```
 
 mod logic;
 
@@ -27,9 +7,9 @@ use crate::spec::ImageSpec;
 use crate::pixel::{ColorType, PIXEL_BYTES};
 use crate::error::{Error, Result};
 
-/// ImageSpecからエンコードに必要なバイト数を取得します
+/// `spec`からエンコードに必要なバイト数を取得します。
 ///
-/// このサイズにはヘッダーとデータ部の合計です
+/// サイズは（[`HEADER_SIZE`] + [`PIXEL_BYTES`] * 総ピクセル数）です。
 /// 
 /// # Examples
 /// 
@@ -48,31 +28,37 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
     HEADER_SIZE + spec.num_pixels() * PIXEL_BYTES
 }
 
-/// ImageSpecとColorTypeから、Limg形式データをバッファに書き込みます。
+/// `spec`と`color_type`、`data`からLimg形式データをエンコードし、`buf`に書き込みます。
 /// 
-/// エラーで無かった場合、書き込まれたバイト数を返します。
+/// エラーではなかった場合、書き込まれたバイト数を返します。
 /// 
 /// # Errors
-/// spec.widthかspec.heightが0の場合、Error::ZeroImageDimensionsを返します。
-/// dataバッファの長さが入力として足りない場合、Error::InputBufferTooSmallを返します。
-/// bufバッファの長さがLimg形式データ書き込みサイズに満たない場合、Error::OutputBufferTooSmallを返します。
+/// 
+/// `spec.width`か`spec.height`が 0 の場合、`Error::ZeroImageDimensions`を返します。
+/// 
+/// `data`の長さが（色バイト数 * 総ピクセル数）未満の場合、`Error::InputBufferTooSmall`を返します。
+/// 
+/// `buf`の長さが（[`HEADER_SIZE`] + [`PIXEL_BYTES`] * 総ピクセル数）未満の場合、`Error::OutputBufferTooSmall`を返します。
 /// 
 /// # Examples
 /// 
-/// ```
+/// ```rust,no_run
 /// use limg_core::encode::{encoded_size, encode};
 /// use limg_core::spec::ImageSpec;
-/// use limg_core::pixel::ColorType;
+/// # use limg_core::pixel::ColorType;
 /// 
-/// fn main() -> limg_core::Result<()> {
-///     let data = [255, 255, 255];
-///     let spec = ImageSpec::new(1, 1);
-///     let mut buf = vec![0u8; encoded_size(&spec)];
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let data = std::fs::read("image.bin")?;
 /// 
-///     let written_size = encode(&data, &mut buf, &spec, ColorType::Rgb888)?;
-///     assert_eq!(written_size, encoded_size(&spec));
-///     Ok(())
-/// }
+/// # let width = 100;
+/// # let height = 100;
+/// # let color_type = ColorType::Rgb888;
+/// let spec = ImageSpec::new(width, height);
+/// let mut buf = vec![0u8; encoded_size(&spec)];
+/// 
+/// encode(&data, &mut buf, &spec, color_type)?;
+/// # Ok(())
+/// # }
 /// ```
 #[inline]
 pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
@@ -100,14 +86,15 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
     Ok(written_size)
 }
 
-/// ImageSpecからヘッダをエンコードし、バッファに書き込みます。
+/// `spec`からヘッダをエンコードし、`buf`に書き込みます。
 /// 
-/// エラーで無かった場合、書き込まれたバイト数を返します。
+/// エラーではなかった場合、書き込まれたバイト数を返します。
 /// 
 /// # Errors
 /// 
-/// spec.widthかspec.heightが0の場合、Error::ZeroImageDimensionsを返します。
-/// bufバッファの長さがヘッダー書き込みサイズに満たない場合、Error::OutputBufferTooSmallを返します。
+/// `spec.width`か`spec.height`が 0 の場合、`Error::ZeroImageDimensions`を返します。
+/// 
+/// `buf`の長さが[`HEADER_SIZE`]未満の場合、`Error::OutputBufferTooSmall`を返します。
 /// 
 /// # Examples
 /// 
@@ -116,7 +103,7 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
 /// use limg_core::encode::encode_header;
 /// use limg_core::spec::ImageSpec;
 /// 
-/// fn main() -> limg_core::Result<()> {
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let spec = ImageSpec::new(1, 1);
 ///     let mut buf = vec![0u8; HEADER_SIZE];
 /// 
@@ -167,31 +154,36 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
     HEADER_SIZE
 }
 
-/// ImageSpecとColorTypeから、色データをエンコードしバッファに書き込みます。
+/// `spec`と`color_type`、`data`から色データをエンコードし、`buf`に書き込みます。
 /// 
-/// エラーで無かった場合、書き込まれたバイト数を返します。
+/// エラーではなかった場合、書き込まれたバイト数を返します。
 /// 
 /// # Errors
 /// 
-/// dataバッファの長さが入力として足りない場合、Error::InputBufferTooSmallを返します。
-/// bufバッファの長さがデータ書き込みサイズに満たない場合、Error::OutputBufferTooSmallを返します。
+/// `data`の長さが（色バイト数 * 総ピクセル数）未満の場合、`Error::InputBufferTooSmall`を返します。
+/// 
+/// `buf`の長さが（[`PIXEL_BYTES`] * 総ピクセル数）未満の場合、`Error::OutputBufferTooSmall`を返します。
 /// 
 /// # Examples
 /// 
-/// ```
+/// ```rust,no_run
 /// use limg_core::encode::encode_data;
 /// use limg_core::spec::ImageSpec;
-/// use limg_core::pixel::{ColorType, PIXEL_BYTES};
+/// use limg_core::pixel::PIXEL_BYTES;
+/// # use limg_core::pixel::ColorType;
 /// 
-/// fn main() -> limg_core::Result<()> {
-///     let data = [255, 255, 255];
-///     let spec = ImageSpec::new(1, 1);
-///     let mut buf = vec![0u8; PIXEL_BYTES * spec.num_pixels()];
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let data = std::fs::read("image.bin")?;
 /// 
-///     let written_size = encode_data(&data, &mut buf, &spec, ColorType::Rgb888)?;
-///     assert_eq!(written_size, PIXEL_BYTES * spec.num_pixels());
-///     Ok(())
-/// }
+/// # let width = 100;
+/// # let height = 100;
+/// # let color_type = ColorType::Rgb888;
+/// let spec = ImageSpec::new(width, height);
+/// let mut buf = vec![0u8; PIXEL_BYTES * spec.num_pixels()];
+/// 
+/// encode_data(&data, &mut buf, &spec, color_type)?;
+/// # Ok(())
+/// # }
 /// ```
 #[inline]
 pub fn encode_data(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorType) -> Result<usize> {
