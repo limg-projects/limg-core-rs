@@ -15,14 +15,14 @@ use crate::error::{Error, Result};
 /// # Examples
 /// 
 /// ```
-/// use limg_core::encode::encoded_size;
+/// use limg_core::encoded_size;
 /// use limg_core::spec::ImageSpec;
 /// 
 /// let spec = ImageSpec::new(100, 100);
-/// let bounds = encoded_size(&spec);
+/// let size = encoded_size(&spec);
 /// 
 /// // HeaderSize(12) + width(100) * height(100) * PixelSize(2)
-/// assert_eq!(bounds, 20012);
+/// assert_eq!(size, 20012);
 /// ```
 #[inline(always)]
 pub const fn encoded_size(spec: &ImageSpec) -> usize {
@@ -44,7 +44,7 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::encode::{encode, encoded_size};
+/// use limg_core::{encode, encoded_size};
 /// use limg_core::spec::ImageSpec;
 /// # use limg_core::ColorType;
 /// 
@@ -100,8 +100,7 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
 /// # Examples
 /// 
 /// ```
-/// use limg_core::HEADER_SIZE;
-/// use limg_core::encode::encode_header;
+/// use limg_core::{encode_header, HEADER_SIZE};
 /// use limg_core::spec::ImageSpec;
 /// 
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -168,7 +167,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::encode::encode_data;
+/// use limg_core::encode_data;
 /// use limg_core::spec::ImageSpec;
 /// use limg_core::pixel::PIXEL_BYTES;
 /// # use limg_core::ColorType;

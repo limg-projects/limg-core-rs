@@ -3,10 +3,14 @@
 mod common;
 pub mod pixel;
 pub mod spec;
-pub mod encode;
-pub mod decode;
+mod encode;
+mod decode;
 mod error;
 
 pub use common::color::ColorType;
 pub use common::header::{HEADER_SIZE, CURRENT_VARSION};
+
+pub use encode::{encode, encode_header, encode_data, encoded_size};
+pub use decode::{decode, decode_header, decode_data, decoded_size};
+
 pub use error::{Result, Error};

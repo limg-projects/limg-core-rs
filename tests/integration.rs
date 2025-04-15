@@ -1,6 +1,6 @@
 use limg_core::HEADER_SIZE;
-use limg_core::decode::{decode, decode_data, decode_header, decoded_size};
-use limg_core::encode::{encode, encode_data, encode_header, encoded_size};
+use limg_core::{decode, decode_data, decode_header, decoded_size};
+use limg_core::{encode, encode_data, encode_header, encoded_size};
 use limg_core::ColorType;
 
 fn encode_decode_test(color_type: ColorType) {

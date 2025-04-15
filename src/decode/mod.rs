@@ -15,9 +15,8 @@ use crate::error::{Error, Result};
 /// # Examples
 /// 
 /// ```
-/// use limg_core::decode::decoded_size;
+/// use limg_core::{ColorType, decoded_size};
 /// use limg_core::spec::ImageSpec;
-/// use limg_core::ColorType;
 /// 
 /// let spec = ImageSpec::new(100, 100);
 /// let color_type = ColorType::Rgb888;
@@ -46,7 +45,7 @@ pub const fn decoded_size(spec: &ImageSpec, color_type: ColorType) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::decode::decode;
+/// use limg_core::decode;
 /// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -80,7 +79,7 @@ pub fn decode(data: &[u8], buf: &mut [u8], color_type: ColorType) -> Result<(Ima
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::decode::decode_header;
+/// use limg_core::decode_header;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.limg")?;
@@ -132,8 +131,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::HEADER_SIZE;
-/// use limg_core::decode::{decode_header, decode_data, decoded_size};
+/// use limg_core::{decode_header, decode_data, decoded_size, HEADER_SIZE};
 /// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
