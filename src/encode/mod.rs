@@ -2,9 +2,10 @@
 
 mod logic;
 
+use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, CURRENT_VARSION, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::spec::ImageSpec;
-use crate::pixel::{ColorType, PIXEL_BYTES};
+use crate::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
 /// `spec`からエンコードに必要なバイト数を取得します。
@@ -45,7 +46,7 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
 /// ```rust,no_run
 /// use limg_core::encode::{encoded_size, encode};
 /// use limg_core::spec::ImageSpec;
-/// # use limg_core::pixel::ColorType;
+/// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.bin")?;
@@ -170,7 +171,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 /// use limg_core::encode::encode_data;
 /// use limg_core::spec::ImageSpec;
 /// use limg_core::pixel::PIXEL_BYTES;
-/// # use limg_core::pixel::ColorType;
+/// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.bin")?;

@@ -13,16 +13,16 @@ macro_rules! decode_logic_fn {
 
         #[inline(never)]
         $(#[$attr])*
-        pub unsafe fn decode_logic(data: *const u8, buf: *mut u8, spec: &crate::spec::ImageSpec, color_type: crate::pixel::ColorType) -> usize {
+        pub unsafe fn decode_logic(data: *const u8, buf: *mut u8, spec: &crate::spec::ImageSpec, color_type: crate::common::color::ColorType) -> usize {
             let num_pixels = spec.num_pixels();
         
             unsafe {
                 match spec.data_endian {
                     crate::spec::DataEndian::Big => {
                         match color_type {
-                            crate::pixel::ColorType::Rgb888 => decode_to_rgb888_be(data, buf, num_pixels),
-                            crate::pixel::ColorType::Rgb565 => decode_to_rgb565_be(data, buf, num_pixels),
-                            crate::pixel::ColorType::Rgba8888 => {
+                            crate::common::color::ColorType::Rgb888 => decode_to_rgb888_be(data, buf, num_pixels),
+                            crate::common::color::ColorType::Rgb565 => decode_to_rgb565_be(data, buf, num_pixels),
+                            crate::common::color::ColorType::Rgba8888 => {
                                 if let Some(transparent_color) = spec.transparent_color {
                                     decode_to_rgba8888_alpha_be(data, buf, transparent_color, num_pixels)
                                 } else {
@@ -33,9 +33,9 @@ macro_rules! decode_logic_fn {
                     },
                     crate::spec::DataEndian::Little => {
                         match color_type {
-                            crate::pixel::ColorType::Rgb888 => decode_to_rgb888_le(data, buf, num_pixels),
-                            crate::pixel::ColorType::Rgb565 => decode_to_rgb565_le(data, buf, num_pixels),
-                            crate::pixel::ColorType::Rgba8888 => {
+                            crate::common::color::ColorType::Rgb888 => decode_to_rgb888_le(data, buf, num_pixels),
+                            crate::common::color::ColorType::Rgb565 => decode_to_rgb565_le(data, buf, num_pixels),
+                            crate::common::color::ColorType::Rgba8888 => {
                                 if let Some(transparent_color) = spec.transparent_color {
                                     decode_to_rgba8888_alpha_le(data, buf, transparent_color, num_pixels)
                                 } else {

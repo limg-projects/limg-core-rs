@@ -1,7 +1,7 @@
 use limg_core::HEADER_SIZE;
 use limg_core::decode::{decode, decode_data, decode_header};
 use limg_core::encode::{encode, encode_data, encode_header, encoded_size};
-use limg_core::pixel::ColorType;
+use limg_core::ColorType;
 
 fn encode_decode_test(color_type: ColorType) {
     let mut encode_buf = vec![0u8; 512 * 512 * 4];

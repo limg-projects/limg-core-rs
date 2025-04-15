@@ -7,5 +7,6 @@ pub mod encode;
 pub mod decode;
 mod error;
 
-pub use error::{Result, Error};
+pub use common::color::ColorType;
 pub use common::header::{HEADER_SIZE, CURRENT_VARSION};
+pub use error::{Result, Error};

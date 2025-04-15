@@ -2,9 +2,10 @@
 
 mod logic;
 
+use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, FLAG_ENDIAN_BIT, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::spec::ImageSpec;
-use crate::pixel::{ColorType, PIXEL_BYTES};
+use crate::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
 /// `data`と`color_type`からLimg形式データをデコードし、`buf`バッファに書き込みます。
@@ -23,7 +24,7 @@ use crate::error::{Error, Result};
 /// 
 /// ```rust,no_run
 /// use limg_core::decode::decode;
-/// # use limg_core::pixel::ColorType;
+/// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.limg")?;
@@ -110,7 +111,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
 /// ```rust,no_run
 /// use limg_core::HEADER_SIZE;
 /// use limg_core::decode::{decode_header, decode_data};
-/// # use limg_core::pixel::ColorType;
+/// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.limg")?;
