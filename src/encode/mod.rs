@@ -44,7 +44,7 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::encode::{encoded_size, encode};
+/// use limg_core::encode::{encode, encoded_size};
 /// use limg_core::spec::ImageSpec;
 /// # use limg_core::ColorType;
 /// 

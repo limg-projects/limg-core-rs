@@ -8,6 +8,29 @@ use crate::spec::ImageSpec;
 use crate::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
+/// `spec`と`color_type`からデコードに必要なバイト数を取得します。
+/// 
+/// サイズは（色バイト数 * 総ピクセル数）です。
+/// 
+/// # Examples
+/// 
+/// ```
+/// use limg_core::decode::decoded_size;
+/// use limg_core::spec::ImageSpec;
+/// use limg_core::ColorType;
+/// 
+/// let spec = ImageSpec::new(100, 100);
+/// let color_type = ColorType::Rgb888;
+/// let size = decoded_size(&spec, color_type);
+/// 
+/// // width(100) * height(100) * color_bytes(3)
+/// assert_eq!(size, 30000);
+/// ```
+#[inline(always)]
+pub const fn decoded_size(spec: &ImageSpec, color_type: ColorType) -> usize {
+    color_type.bytes_per_pixel() * spec.num_pixels()
+}
+
 /// `data`と`color_type`からLimg形式データをデコードし、`buf`バッファに書き込みます。
 /// 
 /// エラーではなかった場合、`ImageSpec`と書き込まれたバイト数を返します。
@@ -110,7 +133,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
 /// 
 /// ```rust,no_run
 /// use limg_core::HEADER_SIZE;
-/// use limg_core::decode::{decode_header, decode_data};
+/// use limg_core::decode::{decode_header, decode_data, decoded_size};
 /// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -118,7 +141,7 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
 /// let spec = decode_header(&data)?;
 /// 
 /// # let color_type = ColorType::Rgb888;
-/// let mut buf = vec![0u8; color_type.bytes_per_pixel() * spec.num_pixels()];
+/// let mut buf = vec![0u8; decoded_size(&spec, color_type)];
 /// decode_data(&data[HEADER_SIZE..], &mut buf, &spec, color_type)?;
 /// # Ok(())
 /// # }
