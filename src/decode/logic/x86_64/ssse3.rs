@@ -239,10 +239,9 @@ decode_from_endian!(
 
 #[cfg(test)]
 mod tests {
-    use crate::decode::logic::scalar;
     use crate::common::color::ColorType;
-    use crate::spec::{ImageSpec, DataEndian};
-
+    use crate::common::spec::{ImageSpec, DataEndian};
+    use crate::decode::logic::scalar;
     use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA_BE, RGB565_DATA_LE};
 
     #[test]

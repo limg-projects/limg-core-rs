@@ -2,7 +2,7 @@ mod logic;
 
 use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, CURRENT_VARSION, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
-use crate::spec::ImageSpec;
+use crate::common::spec::ImageSpec;
 use crate::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
@@ -13,8 +13,7 @@ use crate::error::{Error, Result};
 /// # Examples
 /// 
 /// ```
-/// use limg_core::encoded_size;
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encoded_size};
 /// 
 /// let spec = ImageSpec::new(100, 100);
 /// let size = encoded_size(&spec);
@@ -42,8 +41,7 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::{encode, encoded_size};
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encode, encoded_size};
 /// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -98,8 +96,7 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
 /// # Examples
 /// 
 /// ```
-/// use limg_core::{encode_header, HEADER_SIZE};
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encode_header, HEADER_SIZE};
 /// 
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let spec = ImageSpec::new(1, 1);
@@ -165,8 +162,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::encode_data;
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encode_data};
 /// use limg_core::pixel::PIXEL_BYTES;
 /// # use limg_core::ColorType;
 /// 

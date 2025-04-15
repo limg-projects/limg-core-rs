@@ -2,7 +2,7 @@ mod logic;
 
 use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, FLAG_ENDIAN_BIT, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
-use crate::spec::ImageSpec;
+use crate::common::spec::ImageSpec;
 use crate::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
@@ -13,8 +13,7 @@ use crate::error::{Error, Result};
 /// # Examples
 /// 
 /// ```
-/// use limg_core::{ColorType, decoded_size};
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ColorType, ImageSpec, decoded_size};
 /// 
 /// let spec = ImageSpec::new(100, 100);
 /// let color_type = ColorType::Rgb888;

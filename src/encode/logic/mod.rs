@@ -13,19 +13,19 @@ macro_rules! encode_logic_fn {
 
       #[inline(never)]
       $(#[$attr])*
-      pub unsafe fn encode_logic(data: *const u8, buf: *mut u8, spec: &crate::spec::ImageSpec, color_type: crate::common::color::ColorType) -> usize {
+      pub unsafe fn encode_logic(data: *const u8, buf: *mut u8, spec: &crate::common::spec::ImageSpec, color_type: crate::common::color::ColorType) -> usize {
 		let num_pixels = spec.num_pixels();
 
         unsafe {
 			match spec.data_endian {
-				crate::spec::DataEndian::Big => {
+				crate::common::spec::DataEndian::Big => {
 					match color_type {
 						crate::common::color::ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
 						crate::common::color::ColorType::Rgb565 => encode_from_rgb565_be(data, buf, num_pixels),
 						crate::common::color::ColorType::Rgba8888 => encode_from_rgba8888_be(data, buf, num_pixels),
 					}
 				},
-				crate::spec::DataEndian::Little => {
+				crate::common::spec::DataEndian::Little => {
 					match color_type {
 						crate::common::color::ColorType::Rgb888 => encode_from_rgb888_le(data, buf, num_pixels),
 						crate::common::color::ColorType::Rgb565 => encode_from_rgb565_le(data, buf, num_pixels),
