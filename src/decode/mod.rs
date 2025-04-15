@@ -1,5 +1,3 @@
-//! このモジュールはデコード関数を提供します。
-
 mod logic;
 
 use crate::common::color::ColorType;
