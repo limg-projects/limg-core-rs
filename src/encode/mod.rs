@@ -1,10 +1,9 @@
-//! このモジュールはエンコード関数を提供します。
-
 mod logic;
 
+use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, CURRENT_VARSION, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
-use crate::spec::ImageSpec;
-use crate::pixel::{ColorType, PIXEL_BYTES};
+use crate::common::spec::ImageSpec;
+use crate::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
 /// `spec`からエンコードに必要なバイト数を取得します。
@@ -14,14 +13,13 @@ use crate::error::{Error, Result};
 /// # Examples
 /// 
 /// ```
-/// use limg_core::encode::encoded_size;
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encoded_size};
 /// 
 /// let spec = ImageSpec::new(100, 100);
-/// let bounds = encoded_size(&spec);
+/// let size = encoded_size(&spec);
 /// 
 /// // HeaderSize(12) + width(100) * height(100) * PixelSize(2)
-/// assert_eq!(bounds, 20012);
+/// assert_eq!(size, 20012);
 /// ```
 #[inline(always)]
 pub const fn encoded_size(spec: &ImageSpec) -> usize {
@@ -43,9 +41,8 @@ pub const fn encoded_size(spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::encode::{encoded_size, encode};
-/// use limg_core::spec::ImageSpec;
-/// # use limg_core::pixel::ColorType;
+/// use limg_core::{ImageSpec, encode, encoded_size};
+/// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.bin")?;
@@ -99,9 +96,7 @@ pub fn encode(data: &[u8], buf: &mut [u8], spec: &ImageSpec, color_type: ColorTy
 /// # Examples
 /// 
 /// ```
-/// use limg_core::HEADER_SIZE;
-/// use limg_core::encode::encode_header;
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encode_header, HEADER_SIZE};
 /// 
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let spec = ImageSpec::new(1, 1);
@@ -167,10 +162,9 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::encode::encode_data;
-/// use limg_core::spec::ImageSpec;
+/// use limg_core::{ImageSpec, encode_data};
 /// use limg_core::pixel::PIXEL_BYTES;
-/// # use limg_core::pixel::ColorType;
+/// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let data = std::fs::read("image.bin")?;

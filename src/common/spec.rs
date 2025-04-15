@@ -36,7 +36,7 @@ impl ImageSpec {
     /// # Examples
     /// 
     /// ```
-    /// use limg_core::spec::{DataEndian, ImageSpec};
+    /// use limg_core::{ImageSpec, DataEndian};
     /// 
     /// let spec = ImageSpec::new(100, 100);
     /// assert_eq!(spec.data_endian, DataEndian::Little);
@@ -73,7 +73,7 @@ impl ImageSpec {
     /// # Examples
     /// 
     /// ```
-    /// use limg_core::spec::ImageSpec;
+    /// use limg_core::ImageSpec;
     /// 
     /// let spec = ImageSpec::new(100, 100);
     /// assert_eq!(spec.num_pixels(), 10000)
@@ -87,7 +87,7 @@ impl ImageSpec {
     /// # Examples
     /// 
     /// ```
-    /// use limg_core::spec::ImageSpec;
+    /// use limg_core::ImageSpec;
     /// 
     /// let mut spec = ImageSpec::new(100, 100);
     /// assert_eq!(spec.is_zero_dimensions(), false);

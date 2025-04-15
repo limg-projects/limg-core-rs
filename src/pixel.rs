@@ -7,23 +7,6 @@ pub const PIXEL_G_MASK: u16 = 0x07E0;
 /// RGB565のB情報マスク
 pub const PIXEL_B_MASK: u16 = 0x001F;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ColorType {
-    Rgb888,
-    Rgb565,
-    Rgba8888,
-}
-
-impl ColorType {
-    pub const fn bytes_per_pixel(self) -> usize {
-        match self {
-            ColorType::Rgb888 => 3,
-            ColorType::Rgb565 => 2,
-            ColorType::Rgba8888 => 4,
-        }
-    }
-}
-
 /// `[R, G, B]`配列からRGB565ピクセルに変換します
 /// 
 /// # Examples

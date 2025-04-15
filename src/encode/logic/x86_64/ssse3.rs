@@ -1,7 +1,8 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
-use crate::pixel::{ColorType, PIXEL_BYTES};
+use crate::pixel::PIXEL_BYTES;
 use crate::encode::logic::{scalar, encode_logic_fn};
+use crate::common::color::ColorType;
 use crate::common::logic::x86_64::M128I;
 
 const PIXEL_BLOCK_LEN: usize = 8; // u16(16 bit) * 8 = 128 bit
@@ -157,10 +158,10 @@ encode_from_endian!("little", le_epi16, encode_from_rgb888_le, encode_from_rgb56
 
 #[cfg(test)]
 mod tests {
+    use crate::common::color::ColorType;
+    use crate::common::spec::{DataEndian, ImageSpec};
+    use crate::pixel::PIXEL_BYTES;
     use crate::encode::logic::scalar;
-    use crate::pixel::{ColorType, PIXEL_BYTES};
-    use crate::spec::{DataEndian, ImageSpec};
-
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]

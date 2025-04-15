@@ -1,7 +1,8 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
-use crate::pixel::{ColorType, PIXEL_BYTES, PIXEL_R_MASK, PIXEL_G_MASK, PIXEL_B_MASK};
+use crate::pixel::{PIXEL_BYTES, PIXEL_R_MASK, PIXEL_G_MASK, PIXEL_B_MASK};
 use crate::decode::logic::{scalar, decode_logic_fn};
+use crate::common::color::ColorType;
 use crate::common::logic::x86_64::M256I;
 
 const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit
@@ -266,10 +267,9 @@ decode_from_endian!(
 
 #[cfg(test)]
 mod tests {
+    use crate::common::color::ColorType;
+    use crate::common::spec::{ImageSpec, DataEndian};
     use crate::decode::logic::scalar;
-    use crate::pixel::ColorType;
-    use crate::spec::{ImageSpec, DataEndian};
-
     use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA_BE, RGB565_DATA_LE};
 
     #[test]
