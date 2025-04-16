@@ -3,7 +3,7 @@ mod logic;
 use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, FLAG_ENDIAN_BIT, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::common::spec::ImageSpec;
-use crate::pixel::PIXEL_BYTES;
+use crate::common::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
 /// `spec`と`color_type`からデコードに必要なバイト数を取得します。

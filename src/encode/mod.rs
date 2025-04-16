@@ -3,7 +3,7 @@ mod logic;
 use crate::common::color::ColorType;
 use crate::common::header::{ImageHeader, CURRENT_VARSION, FLAG_USE_TRANSPARENT_BIT, HEADER_SIZE, SIGNATURE_U32_NE};
 use crate::common::spec::ImageSpec;
-use crate::pixel::PIXEL_BYTES;
+use crate::common::pixel::PIXEL_BYTES;
 use crate::error::{Error, Result};
 
 /// `spec`からエンコードに必要なバイト数を取得します。
@@ -162,8 +162,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
 /// # Examples
 /// 
 /// ```rust,no_run
-/// use limg_core::{ImageSpec, encode_data};
-/// use limg_core::pixel::PIXEL_BYTES;
+/// use limg_core::{ImageSpec, encode_data, PIXEL_BYTES};
 /// # use limg_core::ColorType;
 /// 
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {

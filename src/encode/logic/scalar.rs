@@ -1,5 +1,5 @@
 use crate::common::color::ColorType;
-use crate::pixel::{rgb_to_pixel, PIXEL_BYTES};
+use crate::common::pixel::{rgb_to_pixel, PIXEL_BYTES};
 use crate::encode::logic::encode_logic_fn;
 
 #[inline(always)]
@@ -80,7 +80,7 @@ encode_from_endian!("little", to_le, encode_from_rgb888_le, encode_from_rgb565_l
 
 #[cfg(test)]
 mod tests {
-    use crate::pixel::PIXEL_BYTES;
+    use crate::common::pixel::PIXEL_BYTES;
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]

@@ -56,7 +56,7 @@ pub(crate) use decode_logic_fn;
 
 #[cfg(test)]
 mod tests {
-    use crate::pixel::rgb_to_pixel;
+    use crate::common::pixel::rgb_to_pixel;
 
     pub const NUM_PIXELS: usize = 20;
 

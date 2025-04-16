@@ -1,9 +1,9 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
-use crate::pixel::{PIXEL_BYTES, PIXEL_R_MASK, PIXEL_G_MASK, PIXEL_B_MASK};
 use crate::decode::logic::{scalar, decode_logic_fn};
 use crate::common::color::ColorType;
 use crate::common::logic::x86_64::M256I;
+use crate::common::pixel::{PIXEL_BYTES, PIXEL_R_MASK, PIXEL_G_MASK, PIXEL_B_MASK};
 
 const PIXEL_BLOCK_LEN: usize = 16; // u16(16 bit) * 16 = 256 bit
 
@@ -413,7 +413,7 @@ mod tests {
         let rgb565_be_ptr = RGB565_DATA_BE.as_ptr().cast::<u8>();
         let rgb565_le_ptr = RGB565_DATA_LE.as_ptr().cast::<u8>();
 
-        let transparent_color = crate::pixel::rgb_to_pixel([255, 255, 255]);
+        let transparent_color = crate::common::pixel::rgb_to_pixel([255, 255, 255]);
 
         unsafe {
             scalar::decode_to_rgba8888_alpha_be(rgb565_be_ptr, scalar_buf.as_mut_ptr(), transparent_color, NUM_PIXELS);

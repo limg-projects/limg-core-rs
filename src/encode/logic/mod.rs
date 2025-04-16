@@ -35,7 +35,7 @@ macro_rules! encode_logic_fn {
 			}
         }
     
-        crate::pixel::PIXEL_BYTES * num_pixels
+        crate::common::pixel::PIXEL_BYTES * num_pixels
     }
   };
 }
@@ -44,7 +44,7 @@ pub(crate) use encode_logic_fn;
 
 #[cfg(test)]
 mod tests {
-    use crate::pixel::rgb_to_pixel;
+    use crate::common::pixel::rgb_to_pixel;
 
     pub const NUM_PIXELS: usize = 20;
 

@@ -1,5 +1,5 @@
 use crate::common::color::ColorType;
-use crate::pixel::{pixel_to_rgb, PIXEL_BYTES};
+use crate::common::pixel::{pixel_to_rgb, PIXEL_BYTES};
 use crate::decode::logic::decode_logic_fn;
 
 #[inline(always)]
