@@ -130,7 +130,7 @@ unsafe fn encode_header_unchecked(buf: &mut [u8], spec: &ImageSpec) -> usize {
         None => 0,
     };
     
-    let flag = (spec.data_endian as u8) |
+    let flag = (spec.pixel_endian as u8) |
         (use_transparent);
 
     let header = ImageHeader {

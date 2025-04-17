@@ -17,15 +17,15 @@ macro_rules! encode_logic_fn {
 		let num_pixels = spec.num_pixels();
 
         unsafe {
-			match spec.data_endian {
-				crate::common::spec::DataEndian::Big => {
+			match spec.pixel_endian {
+				crate::common::spec::PixelEndian::Big => {
 					match color_type {
 						crate::common::color::ColorType::Rgb888 => encode_from_rgb888_be(data, buf, num_pixels),
 						crate::common::color::ColorType::Rgb565 => encode_from_rgb565_be(data, buf, num_pixels),
 						crate::common::color::ColorType::Rgba8888 => encode_from_rgba8888_be(data, buf, num_pixels),
 					}
 				},
-				crate::common::spec::DataEndian::Little => {
+				crate::common::spec::PixelEndian::Little => {
 					match color_type {
 						crate::common::color::ColorType::Rgb888 => encode_from_rgb888_le(data, buf, num_pixels),
 						crate::common::color::ColorType::Rgb565 => encode_from_rgb565_le(data, buf, num_pixels),

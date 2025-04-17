@@ -103,13 +103,13 @@ pub fn decode_header(data: &[u8]) -> Result<ImageSpec> {
     }
 
     let transparent_color = if (header.flag & FLAG_USE_TRANSPARENT_BIT) != 0 { Some(header.transparent_color) } else { None };
-    let data_endian = unsafe { ::core::mem::transmute(header.flag & FLAG_ENDIAN_BIT) };
+    let pixel_endian = unsafe { ::core::mem::transmute(header.flag & FLAG_ENDIAN_BIT) };
 
     let spec = ImageSpec {
         width: u16::from_le(header.width),
         height: u16::from_le(header.height),
         transparent_color,
-        data_endian
+        pixel_endian
     };
 
     Ok(spec)

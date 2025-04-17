@@ -159,7 +159,7 @@ encode_from_endian!("little", le_epi16, encode_from_rgb888_le, encode_from_rgb56
 #[cfg(test)]
 mod tests {
     use crate::common::color::ColorType;
-    use crate::common::spec::{DataEndian, ImageSpec};
+    use crate::common::spec::{PixelEndian, ImageSpec};
     use crate::common::pixel::PIXEL_BYTES;
     use crate::encode::logic::scalar;
     use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
@@ -177,7 +177,7 @@ mod tests {
         let rgb565_ptr = RGB565_DATA.as_ptr().cast::<u8>();
         let rgba8888_ptr  = RGBA8888_DATA.as_ptr();
 
-        let mut spec = ImageSpec::with_data_endian(NUM_PIXELS as u16, 1, DataEndian::Big);
+        let mut spec = ImageSpec::with_pixel_endian(NUM_PIXELS as u16, 1, PixelEndian::Big);
 
         unsafe {
             super::encode_logic(rgb888_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
@@ -192,7 +192,7 @@ mod tests {
             super::encode_from_rgba8888_be(rgba8888_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
-            spec.data_endian = DataEndian::Little;
+            spec.pixel_endian = PixelEndian::Little;
 
             super::encode_logic(rgb888_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
             super::encode_from_rgb888_le(rgb888_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);

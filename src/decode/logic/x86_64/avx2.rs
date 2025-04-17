@@ -268,7 +268,7 @@ decode_from_endian!(
 #[cfg(test)]
 mod tests {
     use crate::common::color::ColorType;
-    use crate::common::spec::{ImageSpec, DataEndian};
+    use crate::common::spec::{ImageSpec, PixelEndian};
     use crate::decode::logic::scalar;
     use crate::decode::logic::tests::{NUM_PIXELS, RGB565_DATA_BE, RGB565_DATA_LE};
 
@@ -288,7 +288,7 @@ mod tests {
             width: NUM_PIXELS as u16,
             height: 1,
             transparent_color: Some(0xFF),
-            data_endian: DataEndian::Big
+            pixel_endian: PixelEndian::Big
         };
 
         unsafe {
@@ -304,7 +304,7 @@ mod tests {
             super::decode_to_rgba8888_be(rgb565_be_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
             assert_eq!(a_buf, b_buf);
 
-            spec.data_endian = DataEndian::Little;
+            spec.pixel_endian = PixelEndian::Little;
             
             super::decode_logic(rgb565_le_ptr, a_buf.as_mut_ptr(), &spec, ColorType::Rgb888);
             super::decode_to_rgb888_le(rgb565_le_ptr, b_buf.as_mut_ptr(), NUM_PIXELS);
