@@ -1,6 +1,6 @@
 [package]
 name = "limg-core"
 version = "0.1.0"
+authors = ["limg-projects <limg.github@gmail.com>"]
 edition = "2024"
-
-[dependencies]
+license = "MIT"
