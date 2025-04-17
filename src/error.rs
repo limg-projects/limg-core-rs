@@ -2,19 +2,23 @@ use ::core::fmt;
 
 pub type Result<T> = ::core::result::Result<T, Error>;
 
-/// Errors that can occur during encoding or decoding.
+/// エンコードおよびデコード時に発生する可能性があるエラー
 #[derive(Debug)]
 pub enum Error {
-    /// The image has a width or height of zero.
+    /// 画像の幅および高さが0です。
+    /// 
+    /// エンコード時にサイズが0になる設定はできません。
     ZeroImageDimensions,
 
-    /// The input buffer does not contain enough data.
+    /// 入力バッファの長さが足りません。
     InputBufferTooSmall,
 
-    /// The output buffer is too small to hold the result.
+    /// 出力バッファの長さが足りません。
     OutputBufferTooSmall,
 
-    /// The image format or header is not supported or invalid.
+    /// 画像形式がサポートされていません。
+    /// 
+    /// デコード時に発生する可能性があります。
     UnsupportedFormat,
 }
 
