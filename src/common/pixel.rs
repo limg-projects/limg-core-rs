@@ -7,7 +7,7 @@ pub const PIXEL_G_MASK: u16 = 0x07E0;
 /// RGB565のB情報マスク
 pub const PIXEL_B_MASK: u16 = 0x001F;
 
-/// `[R, G, B]`配列からRGB565ピクセルに変換します
+/// `[R, G, B]`配列からピクセルに変換します
 /// 
 /// 変換時に減色が発生します。
 /// 
@@ -26,7 +26,7 @@ pub const fn rgb_to_pixel(rgb: [u8; 3]) -> u16 {
     (((rgb[2] as u16) >> 3) & PIXEL_B_MASK)
 }
 
-/// RGB565ピクセルから`[R, G, B]`配列に変換します
+/// ピクセルから`[R, G, B]`配列に変換します
 /// 
 /// # Examples
 /// 
