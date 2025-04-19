@@ -6,7 +6,7 @@ Limg 画像を読み書きするための`no_std`コアライブラリです。
 ## Usage 
 `Cargo.toml`に以下を入れてください。
 
-```
+```toml
 [dependencies]
 limg-core = "0.1.0"
 ```
