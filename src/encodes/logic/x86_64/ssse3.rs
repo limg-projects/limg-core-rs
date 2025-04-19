@@ -1,6 +1,6 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
-use crate::encode::logic::{scalar, encode_logic_fn};
+use crate::encodes::logic::{scalar, encode_logic_fn};
 use crate::common::color::ColorType;
 use crate::common::logic::x86_64::M128I;
 use crate::common::pixel::PIXEL_BYTES;
@@ -161,8 +161,8 @@ mod tests {
     use crate::common::color::ColorType;
     use crate::common::spec::{PixelEndian, ImageSpec};
     use crate::common::pixel::PIXEL_BYTES;
-    use crate::encode::logic::scalar;
-    use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
+    use crate::encodes::logic::scalar;
+    use crate::encodes::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
     fn encode_logic_x86_64_ssse3() {
