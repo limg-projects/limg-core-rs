@@ -1,6 +1,6 @@
 use crate::common::color::ColorType;
 use crate::common::pixel::{rgb_to_pixel, PIXEL_BYTES};
-use crate::encode::logic::encode_logic_fn;
+use crate::encodes::logic::encode_logic_fn;
 
 #[inline(always)]
 pub unsafe fn encode_from_rgb565_direct(data: *const u8, buf: *mut u8, num_pixels: usize) {
@@ -81,7 +81,7 @@ encode_from_endian!("little", to_le, encode_from_rgb888_le, encode_from_rgb565_l
 #[cfg(test)]
 mod tests {
     use crate::common::pixel::PIXEL_BYTES;
-    use crate::encode::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
+    use crate::encodes::logic::tests::{NUM_PIXELS, RGB888_DATA, RGB565_DATA, RGBA8888_DATA};
 
     #[test]
     fn encode_endian_scalar() {
