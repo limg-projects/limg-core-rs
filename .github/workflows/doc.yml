@@ -34,7 +34,7 @@ jobs:
           mkdir -p "${{ steps.crate-version.outputs.CRATE_VERSION }}"
           cp -r target/doc/* "${{ steps.crate-version.outputs.CRATE_VERSION }}/"
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: "${{ steps.crate-version.outputs.CRATE_VERSION }}"
 
@@ -50,4 +50,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
