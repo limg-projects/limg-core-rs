@@ -1,6 +1,6 @@
 use crate::common::color::ColorType;
 use crate::common::pixel::{pixel_to_rgb, PIXEL_BYTES};
-use crate::decode::logic::decode_logic_fn;
+use crate::decodes::logic::decode_logic_fn;
 
 #[inline(always)]
 const fn pixel_to_alpha(pixel: u16, transparent_color: u16) -> u8 {

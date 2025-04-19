@@ -11,4 +11,4 @@ mod ssse3;
 pub use ssse3::decode_logic;
 
 #[cfg(all(not(target_feature = "avx2"), not(target_feature = "sse4.1")))]
-pub use crate::decode::logic::scalar::decode_logic;
+pub use crate::decodes::logic::scalar::decode_logic;
