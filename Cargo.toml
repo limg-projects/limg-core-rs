@@ -2,5 +2,9 @@
 name = "limg-core"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
-[dependencies]
+description = "no_std limg core package"
+readme = "README.md"
+repository = "https://github.com/limg-projects/limg-core-rs"
+publish = false
