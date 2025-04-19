@@ -8,5 +8,5 @@ Limg 画像を読み書きするための`no_std`コアライブラリです。
 
 ```toml
 [dependencies]
-limg-core = { git = "https://github.com/limg-projects/limg-core-rs" }
+limg-core = { git = "https://github.com/limg-projects/limg-core-rs", tag = "v0.1.0" }
 ```
